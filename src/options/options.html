@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GitHub Dashboard Customizer - Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>GitHub Dashboard Customizer</h1>
+        <p class="subtitle">設定</p>
+      </header>
+
+      <main>
+        <!-- 認証設定セクション -->
+        <section class="section">
+          <h2>認証設定</h2>
+          <p class="description">
+            GitHub Personal Access Token (PAT) を入力してください。
+          </p>
+          <div class="form-group">
+            <label for="token">Personal Access Token:</label>
+            <input
+              type="password"
+              id="token"
+              name="token"
+              placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+              autocomplete="off"
+            />
+            <button type="button" id="toggle-token-visibility">表示</button>
+          </div>
+          <div class="form-actions">
+            <button type="button" id="save-token" class="btn btn-primary">
+              保存
+            </button>
+            <button type="button" id="validate-token" class="btn btn-secondary">
+              検証
+            </button>
+          </div>
+          <div id="token-status" class="status-message"></div>
+          <p class="help-text">
+            <a
+              href="https://github.com/settings/tokens"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub Settings でトークンを作成
+            </a>
+          </p>
+        </section>
+
+        <!-- レイアウト設定セクション -->
+        <section class="section">
+          <h2>レイアウト設定</h2>
+          <p class="description">表示する要素を選択してください。</p>
+          <div class="layout-items" id="layout-items">
+            <!-- Phase 2で動的に生成 -->
+            <div class="layout-item">
+              <input type="checkbox" id="layout-repositories" checked />
+              <label for="layout-repositories">Organization別リポジトリリスト</label>
+            </div>
+            <div class="layout-item">
+              <input type="checkbox" id="layout-issues" checked />
+              <label for="layout-issues">メンションされたIssueリスト</label>
+            </div>
+            <div class="layout-item">
+              <input type="checkbox" id="layout-projects" checked />
+              <label for="layout-projects">更新順プロジェクトサマリー</label>
+            </div>
+          </div>
+        </section>
+
+        <!-- 並び順セクション -->
+        <section class="section">
+          <h2>並び順</h2>
+          <p class="description">
+            ドラッグ&ドロップで並び順を変更できます。（Phase 2で実装予定）
+          </p>
+          <div class="order-list" id="order-list">
+            <!-- Phase 2で実装 -->
+          </div>
+        </section>
+
+        <!-- Export/Importセクション -->
+        <section class="section">
+          <h2>設定のエクスポート/インポート</h2>
+          <p class="description">
+            設定をJSON形式でエクスポート/インポートできます。
+          </p>
+          <div class="form-actions">
+            <button type="button" id="export-settings" class="btn btn-secondary">
+              設定をエクスポート
+            </button>
+            <button type="button" id="import-settings" class="btn btn-secondary">
+              設定をインポート
+            </button>
+          </div>
+          <input type="file" id="import-file" accept=".json" style="display: none;" />
+          <div id="export-status" class="status-message"></div>
+        </section>
+      </main>
+
+      <footer>
+        <p>&copy; 2024 GitHub Dashboard Customizer</p>
+      </footer>
+    </div>
+
+    <script src="options.js"></script>
+  </body>
+</html>
+

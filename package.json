@@ -1,0 +1,37 @@
+{
+  "name": "github-dashboard-customizer",
+  "version": "0.1.0",
+  "description": "Chrome extension to customize GitHub dashboard layout",
+  "main": "dist/background/service-worker.js",
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch",
+    "dev": "npm run build",
+    "clean": "rm -rf dist",
+    "lint": "eslint src/**/*.ts",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\"",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "keywords": [
+    "github",
+    "chrome-extension",
+    "dashboard",
+    "customization"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/chrome": "^0.0.254",
+    "@types/jest": "^29.5.11",
+    "@typescript-eslint/eslint-plugin": "^6.18.1",
+    "@typescript-eslint/parser": "^6.18.1",
+    "esbuild": "^0.25.12",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.1.1",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.3.3"
+  }
+}
