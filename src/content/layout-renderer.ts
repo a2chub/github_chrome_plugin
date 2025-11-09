@@ -33,14 +33,10 @@ const DASHBOARD_SELECTORS = [
 
 interface HeaderElements {
   header: HTMLElement;
-  toggleInput: HTMLInputElement;
-  modeLabel: HTMLElement;
   loadingIndicator: HTMLElement;
   loadingText: HTMLElement;
 }
 
-let layoutToggleInputRef: HTMLInputElement | null = null;
-let layoutModeLabelRef: HTMLElement | null = null;
 let headerLoadingIndicatorRef: HTMLElement | null = null;
 let headerLoadingTextRef: HTMLElement | null = null;
 
@@ -248,7 +244,7 @@ export function createRootContainer(): HTMLDivElement {
  */
 export function applyLayout(
   settings: Settings,
-  options: { isCustomMode?: boolean } = {}
+  _options: { isCustomMode?: boolean } = {}
 ): HTMLDivElement {
   console.log('Applying custom layout...', settings);
 
@@ -261,21 +257,9 @@ export function applyLayout(
   const rootContainer = createRootContainer();
 
   // ヘッダーを作成
-  const {
-    header,
-    toggleInput,
-    modeLabel,
-    loadingIndicator,
-    loadingText,
-  } = createHeader();
-  layoutToggleInputRef = toggleInput;
-  layoutModeLabelRef = modeLabel;
+  const { header, loadingIndicator, loadingText } = createHeader();
   headerLoadingIndicatorRef = loadingIndicator;
   headerLoadingTextRef = loadingText;
-
-  const isCustomMode = options.isCustomMode ?? true;
-  toggleInput.checked = isCustomMode;
-  updateLayoutModeLabel(isCustomMode);
 
   rootContainer.appendChild(header);
 
@@ -474,64 +458,7 @@ function createHeader(): HeaderElements {
   loadingIndicator.appendChild(loadingSpinner);
   loadingIndicator.appendChild(loadingText);
 
-  const toggleWrapper = createElement('div', {
-    className: 'gdc-toggle-wrapper',
-  });
-
-  const toggleLabel = createElement('label', {
-    className: 'gdc-toggle',
-    attributes: {
-      for: 'github-dashboard-layout-toggle',
-    },
-  });
-
-  const originalOption = createElement('span', {
-    className: 'gdc-toggle-option',
-    textContent: 'オリジナル表示',
-  });
-
-  const toggleSwitch = createElement('span', {
-    className: 'gdc-toggle-switch',
-  });
-
-  const toggleInput = createElement('input', {
-    attributes: {
-      type: 'checkbox',
-      id: 'github-dashboard-layout-toggle',
-      role: 'switch',
-      'aria-label': '表示モードを切り替える',
-    },
-  }) as HTMLInputElement;
-
-  const toggleSlider = createElement('span', {
-    className: 'gdc-toggle-slider',
-  });
-
-  toggleSwitch.appendChild(toggleInput);
-  toggleSwitch.appendChild(toggleSlider);
-
-  const customOption = createElement('span', {
-    className: 'gdc-toggle-option',
-    textContent: 'アレンジ表示',
-  });
-
-  toggleLabel.appendChild(originalOption);
-  toggleLabel.appendChild(toggleSwitch);
-  toggleLabel.appendChild(customOption);
-
-  const modeLabel = createElement('span', {
-    className: 'gdc-toggle-status',
-    textContent: '現在: アレンジ表示',
-    attributes: {
-      'aria-live': 'polite',
-    },
-  });
-
-  toggleWrapper.appendChild(toggleLabel);
-  toggleWrapper.appendChild(modeLabel);
-
   controls.appendChild(loadingIndicator);
-  controls.appendChild(toggleWrapper);
 
   mainRow.appendChild(titleBlock);
   mainRow.appendChild(controls);
@@ -539,8 +466,6 @@ function createHeader(): HeaderElements {
 
   return {
     header,
-    toggleInput,
-    modeLabel,
     loadingIndicator,
     loadingText,
   };
@@ -551,14 +476,14 @@ function createHeader(): HeaderElements {
  * @param sectionId セクションID
  * @param data データ
  */
-export function renderSectionData(
+export async function renderSectionData(
   sectionId: string,
   data: {
     repositories?: GroupedRepositories[];
     issues?: Issue[];
     projects?: Project[];
   }
-): void {
+): Promise<void> {
   const section = document.getElementById(sectionId);
   if (!section) {
     console.warn(`Section not found: ${sectionId}`);
@@ -575,7 +500,10 @@ export function renderSectionData(
     switch (sectionId) {
       case 'section-repositories':
         if (data.repositories) {
-          renderRepositoryList(content as HTMLElement, data.repositories);
+          await renderRepositoryList(
+            content as HTMLElement,
+            data.repositories
+          );
         }
         break;
 
@@ -598,27 +526,6 @@ export function renderSectionData(
     console.error(`Error rendering section ${sectionId}:`, error);
     renderSectionError(sectionId, String(error));
   }
-}
-
-/**
- * レイアウト切り替えトグル要素を取得
- */
-export function getLayoutToggleInput(): HTMLInputElement | null {
-  return layoutToggleInputRef;
-}
-
-/**
- * 表示モードラベルを更新
- * @param isCustomMode カスタム表示かどうか
- */
-export function updateLayoutModeLabel(isCustomMode: boolean): void {
-  if (!layoutModeLabelRef) {
-    return;
-  }
-
-  layoutModeLabelRef.textContent = isCustomMode
-    ? '現在: アレンジ表示'
-    : '現在: オリジナル表示';
 }
 
 /**

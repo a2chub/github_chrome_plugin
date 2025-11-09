@@ -6,9 +6,7 @@ import {
   renderSectionData,
   renderSectionError,
   restoreDashboard,
-  getLayoutToggleInput,
   setHeaderLoadingState,
-  updateLayoutModeLabel,
 } from './layout-renderer';
 import { createNotificationBanner } from './dom-manipulator';
 
@@ -21,8 +19,6 @@ console.log('GitHub Dashboard Customizer: Content Script loaded');
 
 let currentSettings: Settings | null = null;
 let isCustomLayoutActive = true;
-let layoutToggleInputRef: HTMLInputElement | null = null;
-let layoutToggleListener: ((event: Event) => void) | null = null;
 let isFetchingData = false;
 
 /**
@@ -41,6 +37,11 @@ async function init() {
 
   // 設定を取得
   await loadSettings();
+
+  // 初期状態で標準レイアウトの場合、トグルを表示
+  if (!isCustomLayoutActive) {
+    addLayoutToggleToSearchForm(false); // 標準レイアウトトグルを表示
+  }
 
   // ページが完全に読み込まれてからDOM操作を開始
   if (document.readyState === 'loading') {
@@ -97,6 +98,8 @@ async function applyCustomizations() {
 
   if (!isCustomLayoutActive) {
     console.log('Custom layout is disabled; skipping customization.');
+    // 標準レイアウトの場合でもトグルを表示
+    addLayoutToggleToSearchForm(false);
     return;
   }
 
@@ -105,7 +108,7 @@ async function applyCustomizations() {
   // レイアウトを適用
   try {
     applyLayout(currentSettings, { isCustomMode: isCustomLayoutActive });
-    setupHeaderControls();
+    addLayoutToggleToSearchForm(true);
     console.log('Layout applied successfully');
 
     // PATが設定されているかチェック
@@ -171,45 +174,17 @@ function showTokenRequiredBanner() {
 }
 
 /**
- * ヘッダーのトグルとローディング表示を初期化
- */
-function setupHeaderControls() {
-  const toggleInput = getLayoutToggleInput();
-  if (!toggleInput) {
-    console.warn('Layout toggle input not found');
-    return;
-  }
-
-  if (layoutToggleInputRef && layoutToggleListener) {
-    layoutToggleInputRef.removeEventListener('change', layoutToggleListener);
-  }
-
-  layoutToggleInputRef = toggleInput;
-  layoutToggleInputRef.checked = isCustomLayoutActive;
-  updateLayoutModeLabel(isCustomLayoutActive);
-
-  layoutToggleListener = (event: Event) => {
-    const target = event.target as HTMLInputElement;
-    handleLayoutModeChange(target.checked);
-  };
-
-  layoutToggleInputRef.addEventListener('change', layoutToggleListener);
-}
-
-/**
  * レイアウトモード切り替え時の処理
  */
 function handleLayoutModeChange(useCustomLayout: boolean) {
   if (isCustomLayoutActive === useCustomLayout) {
-    // 状態が変わらない場合は何もしない
-    updateLayoutModeLabel(useCustomLayout);
     return;
   }
 
   isCustomLayoutActive = useCustomLayout;
-  updateLayoutModeLabel(useCustomLayout);
 
   if (useCustomLayout) {
+    addLayoutToggleToSearchForm(true); // カスタムレイアウトトグルを表示
     applyCustomizations();
   } else {
     teardownCustomLayout();
@@ -224,12 +199,6 @@ function teardownCustomLayout() {
 
   setHeaderLoadingState(false);
 
-  if (layoutToggleInputRef && layoutToggleListener) {
-    layoutToggleInputRef.removeEventListener('change', layoutToggleListener);
-  }
-
-  layoutToggleInputRef = null;
-  layoutToggleListener = null;
   isFetchingData = false;
 
   const root = document.getElementById('github-dashboard-customizer-root');
@@ -238,6 +207,11 @@ function teardownCustomLayout() {
   }
 
   restoreDashboard();
+  
+  // 標準レイアウトに切り替えた後、トグルボタンを追加
+  setTimeout(() => {
+    addLayoutToggleToSearchForm(false);
+  }, 100);
 }
 
 /**
@@ -270,7 +244,7 @@ async function fetchAndRenderData() {
         console.log('Custom layout disabled during fetch; skipping render.');
         return;
       }
-      renderData(response.data);
+      await renderData(response.data);
     } else {
       console.error('Failed to fetch data:', response.error);
       // エラーを各セクションに表示
@@ -290,28 +264,28 @@ async function fetchAndRenderData() {
 /**
  * データを描画
  */
-function renderData(data: {
+async function renderData(data: {
   repositories?: unknown[];
   issues?: unknown[];
   projects?: unknown[];
-}) {
+}): Promise<void> {
   // リポジトリデータを描画
   if (data.repositories) {
-    renderSectionData('section-repositories', {
+    await renderSectionData('section-repositories', {
       repositories: data.repositories as never,
     });
   }
 
   // Issueデータを描画
   if (data.issues) {
-    renderSectionData('section-issues', {
+    await renderSectionData('section-issues', {
       issues: data.issues as never,
     });
   }
 
   // プロジェクトデータを描画
   if (data.projects) {
-    renderSectionData('section-projects', {
+    await renderSectionData('section-projects', {
       projects: data.projects as never,
     });
   }
@@ -363,7 +337,7 @@ async function handleSettingsUpdated(message: SettingsUpdatedMessage) {
   // レイアウトを再構築
   try {
     rebuildLayout(currentSettings, { isCustomMode: isCustomLayoutActive });
-    setupHeaderControls();
+    addLayoutToggleToSearchForm(true);
     console.log('Layout rebuilt successfully');
 
     // データを再取得して表示
@@ -371,6 +345,99 @@ async function handleSettingsUpdated(message: SettingsUpdatedMessage) {
   } catch (error) {
     console.error('Failed to rebuild layout:', error);
   }
+}
+
+// 共通のトグル配置関数
+function addLayoutToggleToSearchForm(isCustomMode: boolean) {
+  // 既存のトグルをすべて削除
+  const existingToggles = [
+    document.getElementById('github-standard-layout-toggle'),
+    document.getElementById('github-custom-layout-toggle')
+  ];
+  existingToggles.forEach(toggle => toggle?.remove());
+
+  // 検索フォームを探す
+  const searchButton = document.querySelector('[data-target="qbsearch-input.inputButton"]') as HTMLElement;
+  const searchForm = searchButton?.closest('form') || 
+                    document.querySelector('form[data-test-selector="nav-search-form"]') ||
+                    document.querySelector('.AppHeader-search');
+
+  if (!searchButton && !searchForm) {
+    console.warn('Search form not found for layout toggle');
+    return;
+  }
+
+  // 検索フォームの親コンテナを取得
+  const searchContainer = searchButton?.parentElement || searchForm?.parentElement;
+  if (!searchContainer) {
+    console.warn('Search container not found');
+    return;
+  }
+
+  // トグルボタンを作成
+  const toggleButton = document.createElement('button');
+  toggleButton.id = isCustomMode ? 'github-custom-layout-toggle' : 'github-standard-layout-toggle';
+  toggleButton.type = 'button';
+  toggleButton.className = 'btn btn-sm';
+  toggleButton.style.cssText = `
+    margin-right: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 12px;
+    height: 32px;
+    padding: 0 12px;
+    background-color: var(--color-btn-bg, #f6f8fa);
+    border: 1px solid var(--color-btn-border, rgba(31, 35, 40, 0.15));
+    border-radius: 6px;
+    color: var(--color-btn-text, #24292f);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    vertical-align: middle;
+    box-sizing: border-box;
+    white-space: nowrap;
+  `;
+
+  // ホバー効果
+  toggleButton.addEventListener('mouseenter', () => {
+    toggleButton.style.backgroundColor = 'var(--color-btn-hover-bg, #f3f4f6)';
+    toggleButton.style.borderColor = 'var(--color-btn-hover-border, rgba(31, 35, 40, 0.15))';
+  });
+
+  toggleButton.addEventListener('mouseleave', () => {
+    toggleButton.style.backgroundColor = 'var(--color-btn-bg, #f6f8fa)';
+    toggleButton.style.borderColor = 'var(--color-btn-border, rgba(31, 35, 40, 0.15))';
+  });
+
+  // テキストとアイコンを設定
+  const buttonText = isCustomMode ? '標準表示' : 'カスタム表示';
+  toggleButton.innerHTML = `
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <path d="M1.75 2.5a.25.25 0 00-.25.25v10.5c0 .138.112.25.25.25h12.5a.25.25 0 00.25-.25v-10.5a.25.25 0 00-.25-.25H1.75zM0 2.75C0 1.784.784 1 1.75 1h12.5C15.216 1 16 1.784 16 2.75v10.5A1.75 1.75 0 0114.25 15H1.75A1.75 1.75 0 010 13.25V2.75zm4.5 6.5h7v-1h-7v1z"/>
+    </svg>
+    <span>${buttonText}</span>
+  `;
+
+  // クリックイベント
+  toggleButton.addEventListener('click', () => {
+    handleLayoutModeChange(!isCustomMode);
+  });
+
+  // 検索フォームの左側に挿入
+  const insertionTarget =
+    searchForm ||
+    searchButton?.closest('.AppHeader-search') ||
+    searchContainer.firstElementChild ||
+    searchButton;
+
+  const parent = insertionTarget?.parentElement;
+  if (!insertionTarget || !parent) {
+    console.warn('Failed to determine insertion point for layout toggle');
+    return;
+  }
+
+  parent.insertBefore(toggleButton, insertionTarget);
 }
 
 // 初期化実行

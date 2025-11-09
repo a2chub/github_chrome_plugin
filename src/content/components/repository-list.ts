@@ -1,4 +1,5 @@
 import { Repository } from '../../types/api';
+import { getData, saveData } from '../../utils/storage';
 import {
   createElement,
   createEmptyState,
@@ -18,15 +19,40 @@ export interface GroupedRepositories {
   repositories: Repository[];
 }
 
+type AccordionState = Record<string, boolean>;
+
+const ORG_ACCORDION_STORAGE_KEY = 'orgAccordionState';
+
+let orgAccordionState: AccordionState = {};
+let isAccordionStateLoaded = false;
+
+async function ensureAccordionState(): Promise<AccordionState> {
+  if (!isAccordionStateLoaded) {
+    const storedState =
+      (await getData<AccordionState>(ORG_ACCORDION_STORAGE_KEY)) || {};
+    orgAccordionState = storedState;
+    isAccordionStateLoaded = true;
+  }
+  return orgAccordionState;
+}
+
+async function persistAccordionState(): Promise<void> {
+  try {
+    await saveData(ORG_ACCORDION_STORAGE_KEY, orgAccordionState);
+  } catch (error) {
+    console.error('Failed to persist accordion state:', error);
+  }
+}
+
 /**
  * リポジトリリストを描画
  * @param container 描画先のコンテナ要素
  * @param data グループ化されたリポジトリデータ
  */
-export function renderRepositoryList(
+export async function renderRepositoryList(
   container: HTMLElement,
   data: GroupedRepositories[]
-): void {
+): Promise<void> {
   // 既存のコンテンツをクリア
   container.innerHTML = '';
 
@@ -35,9 +61,11 @@ export function renderRepositoryList(
     return;
   }
 
+  const accordionState = await ensureAccordionState();
+
   // Organization別にセクションを作成
   data.forEach((group) => {
-    const orgSection = createOrganizationSection(group);
+    const orgSection = createOrganizationSection(group, accordionState);
     container.appendChild(orgSection);
   });
 }
@@ -46,7 +74,8 @@ export function renderRepositoryList(
  * Organizationセクションを作成
  */
 function createOrganizationSection(
-  group: GroupedRepositories
+  group: GroupedRepositories,
+  accordionState: AccordionState
 ): HTMLElement {
   const section = createElement('div', {
     className: 'org-section',
@@ -57,18 +86,66 @@ function createOrganizationSection(
 
   // Organization名のヘッダー
   const header = createElement('h3', {
-    textContent: group.organization,
     className: 'org-header',
     styles: {
-      fontSize: '16px',
-      fontWeight: '600',
+      margin: '0',
       marginBottom: '8px',
-      color: '#24292f',
-      paddingBottom: '8px',
-      borderBottom: '1px solid #d0d7de',
     },
   });
 
+  const toggleButton = createElement('button', {
+    className: 'org-toggle-button',
+    textContent: group.organization,
+    attributes: {
+      type: 'button',
+    },
+    styles: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      width: '100%',
+      fontSize: '16px',
+      fontWeight: '600',
+      color: '#24292f',
+      backgroundColor: 'transparent',
+      border: 'none',
+      padding: '0 0 8px',
+      borderBottom: '1px solid #d0d7de',
+      cursor: 'pointer',
+      textAlign: 'left',
+    },
+  });
+
+  const toggleIcon = createElement('span', {
+    className: 'org-toggle-icon',
+    styles: {
+      fontSize: '18px',
+      lineHeight: '1',
+      transition: 'transform 0.2s ease',
+    },
+  });
+
+  const title = createElement('span', {
+    textContent: group.organization,
+    className: 'org-toggle-title',
+    styles: {
+      flex: '1',
+    },
+  });
+
+  const countBadge = createElement('span', {
+    textContent: `${group.repositories.length}件`,
+    className: 'org-repo-count',
+    styles: {
+      fontSize: '12px',
+      color: '#57606a',
+    },
+  });
+
+  toggleButton.appendChild(toggleIcon);
+  toggleButton.appendChild(title);
+  toggleButton.appendChild(countBadge);
+  header.appendChild(toggleButton);
   section.appendChild(header);
 
   // リポジトリリスト
@@ -87,6 +164,35 @@ function createOrganizationSection(
   });
 
   section.appendChild(list);
+
+  let isExpanded = accordionState[group.organization];
+  if (isExpanded === undefined) {
+    isExpanded = true;
+  }
+
+  function setExpanded(nextState: boolean) {
+    isExpanded = nextState;
+    accordionState[group.organization] = isExpanded;
+    list.style.display = isExpanded ? 'flex' : 'none';
+    toggleButton.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+    toggleIcon.textContent = isExpanded ? '\u25BE' : '\u25B8';
+    section.setAttribute('data-expanded', isExpanded ? 'true' : 'false');
+  }
+
+  function handleToggle() {
+    setExpanded(!isExpanded);
+    void persistAccordionState();
+  }
+
+  toggleButton.addEventListener('click', handleToggle);
+  toggleButton.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleToggle();
+    }
+  });
+
+  setExpanded(isExpanded);
 
   return section;
 }
