@@ -5,6 +5,10 @@ import {
   rebuildLayout,
   renderSectionData,
   renderSectionError,
+  restoreDashboard,
+  getLayoutToggleInput,
+  setHeaderLoadingState,
+  updateLayoutModeLabel,
 } from './layout-renderer';
 import { createNotificationBanner } from './dom-manipulator';
 
@@ -16,6 +20,10 @@ import { createNotificationBanner } from './dom-manipulator';
 console.log('GitHub Dashboard Customizer: Content Script loaded');
 
 let currentSettings: Settings | null = null;
+let isCustomLayoutActive = true;
+let layoutToggleInputRef: HTMLInputElement | null = null;
+let layoutToggleListener: ((event: Event) => void) | null = null;
+let isFetchingData = false;
 
 /**
  * 初期化処理
@@ -87,11 +95,17 @@ async function applyCustomizations() {
     return;
   }
 
+  if (!isCustomLayoutActive) {
+    console.log('Custom layout is disabled; skipping customization.');
+    return;
+  }
+
   console.log('Applying customizations...');
 
   // レイアウトを適用
   try {
-    applyLayout(currentSettings);
+    applyLayout(currentSettings, { isCustomMode: isCustomLayoutActive });
+    setupHeaderControls();
     console.log('Layout applied successfully');
 
     // PATが設定されているかチェック
@@ -157,10 +171,92 @@ function showTokenRequiredBanner() {
 }
 
 /**
+ * ヘッダーのトグルとローディング表示を初期化
+ */
+function setupHeaderControls() {
+  const toggleInput = getLayoutToggleInput();
+  if (!toggleInput) {
+    console.warn('Layout toggle input not found');
+    return;
+  }
+
+  if (layoutToggleInputRef && layoutToggleListener) {
+    layoutToggleInputRef.removeEventListener('change', layoutToggleListener);
+  }
+
+  layoutToggleInputRef = toggleInput;
+  layoutToggleInputRef.checked = isCustomLayoutActive;
+  updateLayoutModeLabel(isCustomLayoutActive);
+
+  layoutToggleListener = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    handleLayoutModeChange(target.checked);
+  };
+
+  layoutToggleInputRef.addEventListener('change', layoutToggleListener);
+}
+
+/**
+ * レイアウトモード切り替え時の処理
+ */
+function handleLayoutModeChange(useCustomLayout: boolean) {
+  if (isCustomLayoutActive === useCustomLayout) {
+    // 状態が変わらない場合は何もしない
+    updateLayoutModeLabel(useCustomLayout);
+    return;
+  }
+
+  isCustomLayoutActive = useCustomLayout;
+  updateLayoutModeLabel(useCustomLayout);
+
+  if (useCustomLayout) {
+    applyCustomizations();
+  } else {
+    teardownCustomLayout();
+  }
+}
+
+/**
+ * カスタムレイアウトを破棄してGitHub標準表示を復元
+ */
+function teardownCustomLayout() {
+  console.log('Disabling custom layout and restoring original dashboard...');
+
+  setHeaderLoadingState(false);
+
+  if (layoutToggleInputRef && layoutToggleListener) {
+    layoutToggleInputRef.removeEventListener('change', layoutToggleListener);
+  }
+
+  layoutToggleInputRef = null;
+  layoutToggleListener = null;
+  isFetchingData = false;
+
+  const root = document.getElementById('github-dashboard-customizer-root');
+  if (root) {
+    root.remove();
+  }
+
+  restoreDashboard();
+}
+
+/**
  * データを取得して描画
  */
 async function fetchAndRenderData() {
+  if (!isCustomLayoutActive) {
+    console.log('Custom layout disabled; skipping data fetch.');
+    return;
+  }
+
+  if (isFetchingData) {
+    console.log('Data fetch already in progress; skipping duplicate request.');
+    return;
+  }
+
   try {
+    isFetchingData = true;
+    setHeaderLoadingState(true);
     console.log('Fetching data...');
 
     const response = await chrome.runtime.sendMessage({
@@ -170,6 +266,10 @@ async function fetchAndRenderData() {
 
     if (response.success) {
       console.log('Data fetched:', response.data);
+      if (!isCustomLayoutActive) {
+        console.log('Custom layout disabled during fetch; skipping render.');
+        return;
+      }
       renderData(response.data);
     } else {
       console.error('Failed to fetch data:', response.error);
@@ -181,6 +281,9 @@ async function fetchAndRenderData() {
     showDataError(
       error instanceof Error ? error.message : 'データの取得に失敗しました'
     );
+  } finally {
+    setHeaderLoadingState(false);
+    isFetchingData = false;
   }
 }
 
@@ -252,9 +355,15 @@ async function handleSettingsUpdated(message: SettingsUpdatedMessage) {
   console.log('Settings updated:', message.settings);
   currentSettings = message.settings;
 
+  if (!isCustomLayoutActive) {
+    console.log('Custom layout disabled; deferring layout rebuild until re-enabled.');
+    return;
+  }
+
   // レイアウトを再構築
   try {
-    rebuildLayout(currentSettings);
+    rebuildLayout(currentSettings, { isCustomMode: isCustomLayoutActive });
+    setupHeaderControls();
     console.log('Layout rebuilt successfully');
 
     // データを再取得して表示

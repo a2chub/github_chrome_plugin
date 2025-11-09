@@ -28,6 +28,18 @@ export function hideElements(selector: string): void {
 }
 
 /**
+ * セレクタで要素を検索して表示を復元
+ * @param selector CSSセレクタ
+ */
+export function showElements(selector: string): void {
+  const elements = document.querySelectorAll(selector);
+  elements.forEach((element) => {
+    (element as HTMLElement).style.removeProperty('display');
+  });
+  console.log(`Shown ${elements.length} elements matching "${selector}"`);
+}
+
+/**
  * 要素を作成
  * @param tag タグ名
  * @param options オプション
@@ -85,10 +97,29 @@ export function createContainer(id: string): HTMLDivElement {
     id,
     className: 'github-dashboard-customizer-container',
     styles: {
+      position: 'relative',
       width: '100%',
       maxWidth: '1280px',
       margin: '0 auto',
       padding: '24px',
+    },
+  });
+}
+
+/**
+ * スピナー要素を作成
+ * @param size スピナーサイズ(px)
+ * @returns スピナー要素
+ */
+export function createSpinnerIcon(size = 18): HTMLSpanElement {
+  return createElement('span', {
+    className: 'gdc-spinner-icon',
+    attributes: {
+      'aria-hidden': 'true',
+    },
+    styles: {
+      width: `${size}px`,
+      height: `${size}px`,
     },
   });
 }
@@ -147,7 +178,7 @@ export function createSection(
  */
 export function createLoadingElement(): HTMLDivElement {
   const loading = createElement('div', {
-    className: 'loading',
+    className: 'loading gdc-section-loading',
     styles: {
       display: 'flex',
       justifyContent: 'center',
@@ -157,15 +188,24 @@ export function createLoadingElement(): HTMLDivElement {
     },
   });
 
-  const spinner = createElement('div', {
-    className: 'spinner',
-    textContent: '読み込み中...',
+  const content = createElement('div', {
+    className: 'gdc-loading-inline',
     styles: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
       fontSize: '14px',
     },
   });
 
-  loading.appendChild(spinner);
+  const spinner = createSpinnerIcon(20);
+  const label = createElement('span', {
+    textContent: 'GitHubからデータを取得しています…',
+  });
+
+  content.appendChild(spinner);
+  content.appendChild(label);
+  loading.appendChild(content);
   return loading;
 }
 
