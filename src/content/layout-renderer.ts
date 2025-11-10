@@ -123,78 +123,10 @@ function ensureGlobalStyles(): void {
       display: inline-flex;
     }
 
-    .gdc-toggle-wrapper {
+    .gdc-embedded-sidebar {
       display: flex;
       flex-direction: column;
-      align-items: flex-end;
-      gap: 4px;
-    }
-
-    .gdc-toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      font-size: 13px;
-      color: #57606a;
-    }
-
-    .gdc-toggle-option {
-      font-weight: 500;
-      color: #57606a;
-    }
-
-    .gdc-toggle-switch {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      width: 48px;
-      height: 24px;
-    }
-
-    .gdc-toggle-switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-      position: absolute;
-      inset: 0;
-      margin: 0;
-    }
-
-    .gdc-toggle-slider {
-      position: relative;
-      display: inline-block;
-      width: 100%;
-      height: 100%;
-      background-color: #d0d7de;
-      border-radius: 999px;
-      transition: background-color 0.2s ease;
-    }
-
-    .gdc-toggle-slider::before {
-      content: '';
-      position: absolute;
-      width: 20px;
-      height: 20px;
-      left: 2px;
-      top: 2px;
-      border-radius: 50%;
-      background-color: #ffffff;
-      box-shadow: 0 1px 2px rgba(31, 35, 40, 0.2);
-      transition: transform 0.2s ease;
-    }
-
-    .gdc-toggle-switch input:checked + .gdc-toggle-slider {
-      background-color: #0969da;
-    }
-
-    .gdc-toggle-switch input:checked + .gdc-toggle-slider::before {
-      transform: translateX(24px);
-    }
-
-    .gdc-toggle-status {
-      font-size: 12px;
-      color: #57606a;
+      gap: 16px;
     }
   `;
 
@@ -266,10 +198,11 @@ export function applyLayout(
   // 設定に基づいてセクションを作成
   const sections = createSections(settings);
 
-  // セクションをコンテナに追加
   sections.forEach((section) => {
     rootContainer.appendChild(section);
   });
+
+  moveSectionToSidebar('section-issues', rootContainer);
 
   // GitHubのメインコンテンツエリアにコンテナを挿入
   insertToPage(rootContainer);
@@ -300,6 +233,52 @@ function createSections(settings: Settings): HTMLElement[] {
   });
 
   return sections;
+}
+
+function moveSectionToSidebar(
+  sectionId: string,
+  rootContainer: HTMLElement
+): void {
+  const section = rootContainer.querySelector(`#${sectionId}`);
+  if (!section) {
+    return;
+  }
+
+  const targetSidebar = document.querySelector(
+    '.feed-left-sidebar'
+  ) as HTMLElement | null;
+
+  if (!targetSidebar) {
+    // サイドバーが見つからない場合は元の位置に残す
+    return;
+  }
+
+  const existing = targetSidebar.querySelector(`#${sectionId}`);
+  if (existing) {
+    existing.remove();
+  }
+
+  const container = ensureEmbeddedSidebarContainer(targetSidebar);
+  container.appendChild(section);
+}
+
+function ensureEmbeddedSidebarContainer(targetSidebar: HTMLElement): HTMLElement {
+  let container = targetSidebar.querySelector(
+    '.gdc-embedded-sidebar'
+  ) as HTMLElement | null;
+
+  if (!container) {
+    container = createElement('div', {
+      className: 'gdc-embedded-sidebar',
+      styles: {
+        marginBottom: '16px',
+      },
+    });
+
+    targetSidebar.insertBefore(container, targetSidebar.firstChild);
+  }
+
+  return container;
 }
 
 /**

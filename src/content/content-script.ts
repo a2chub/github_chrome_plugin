@@ -206,6 +206,11 @@ function teardownCustomLayout() {
     root.remove();
   }
 
+  // サイドバーに挿入したセクションを削除
+  document
+    .querySelectorAll('.gdc-embedded-sidebar, #section-issues')
+    .forEach((element) => element.remove());
+
   restoreDashboard();
   
   // 標準レイアウトに切り替えた後、トグルボタンを追加
