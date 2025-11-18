@@ -11,19 +11,13 @@ import {
   createElement,
   createSpinnerIcon,
 } from './dom-manipulator';
-import {
-  renderRepositoryList,
-  renderRepositoryError,
-  GroupedRepositories,
-} from './components/repository-list';
+import { renderRepositoryList, renderRepositoryError } from './components/repository-list';
 import {
   renderIssueList,
   renderIssueError,
 } from './components/issue-list';
-import {
-  renderProjectSummary,
-  renderProjectError,
-} from './components/project-summary';
+import { renderProjectSummary, renderProjectError } from './components/project-summary';
+import { GroupedRepository } from '../types/api';
 
 const DASHBOARD_SELECTORS = [
   '.js-feed-personal-container',
@@ -458,7 +452,7 @@ function createHeader(): HeaderElements {
 export async function renderSectionData(
   sectionId: string,
   data: {
-    repositories?: GroupedRepositories[];
+    repositories?: GroupedRepository[];
     issues?: Issue[];
     projects?: Project[];
   }

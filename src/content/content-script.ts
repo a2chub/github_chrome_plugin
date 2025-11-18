@@ -1,5 +1,6 @@
 import { Message, SettingsUpdatedMessage } from '../types/messages';
 import { Settings } from '../types/settings';
+import { GroupedRepository, Issue, Project } from '../types/api';
 import {
   applyLayout,
   rebuildLayout,
@@ -270,28 +271,28 @@ async function fetchAndRenderData() {
  * データを描画
  */
 async function renderData(data: {
-  repositories?: unknown[];
-  issues?: unknown[];
-  projects?: unknown[];
+  repositories?: GroupedRepository[];
+  issues?: Issue[];
+  projects?: Project[];
 }): Promise<void> {
   // リポジトリデータを描画
   if (data.repositories) {
     await renderSectionData('section-repositories', {
-      repositories: data.repositories as never,
+      repositories: data.repositories,
     });
   }
 
   // Issueデータを描画
   if (data.issues) {
     await renderSectionData('section-issues', {
-      issues: data.issues as never,
+      issues: data.issues,
     });
   }
 
   // プロジェクトデータを描画
   if (data.projects) {
     await renderSectionData('section-projects', {
-      projects: data.projects as never,
+      projects: data.projects,
     });
   }
 }

@@ -24,6 +24,21 @@ export interface CacheEntry<T = unknown> {
 }
 
 /**
+ * リポジトリ表示設定
+ */
+export interface RepositoryDisplaySettings {
+  perOrgLimit: number;
+  updatedWithinDays: number;
+}
+
+/**
+ * 表示設定
+ */
+export interface DisplayPreferences {
+  repositories: RepositoryDisplaySettings;
+}
+
+/**
  * 設定データの定義
  */
 export interface Settings {
@@ -34,6 +49,7 @@ export interface Settings {
     issues?: CacheEntry;
     projects?: CacheEntry;
   };
+  preferences: DisplayPreferences;
 }
 
 /**
@@ -47,6 +63,12 @@ export const DEFAULT_SETTINGS: Settings = {
   ],
   token: '',
   cache: {},
+  preferences: {
+    repositories: {
+      perOrgLimit: 10,
+      updatedWithinDays: 30,
+    },
+  },
 };
 
 /**

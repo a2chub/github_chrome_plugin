@@ -35,7 +35,7 @@
       "128": "assets/icons/icon128.png"
     },
     "default_title": "GitHub Dashboard Customizer",
-    "default_popup": ""
+    "default_popup": "popup/popup.html"
   }
 }
 

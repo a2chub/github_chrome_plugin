@@ -1,4 +1,9 @@
-import { Settings, LayoutItem } from '../types/settings';
+import {
+  Settings,
+  LayoutItem,
+  RepositoryDisplaySettings,
+  DisplayPreferences,
+} from '../types/settings';
 
 /**
  * バリデーション結果の型定義
@@ -43,6 +48,81 @@ export function validateSettings(settings: unknown): ValidationResult {
   // cacheのバリデーション
   if (s.cache !== undefined && typeof s.cache !== 'object') {
     errors.push('cacheがオブジェクトではありません');
+  }
+
+  // preferencesのバリデーション
+  if (s.preferences !== undefined) {
+    if (!s.preferences || typeof s.preferences !== 'object') {
+      errors.push('preferencesがオブジェクトではありません');
+    } else {
+      const preferencesErrors = validateDisplayPreferences(
+        s.preferences as DisplayPreferences
+      );
+      if (!preferencesErrors.valid) {
+        errors.push(...preferencesErrors.errors);
+      }
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+function validateDisplayPreferences(
+  preferences: DisplayPreferences
+): ValidationResult {
+  const errors: string[] = [];
+
+  if (!preferences || typeof preferences !== 'object') {
+    errors.push('preferencesが不正です');
+    return { valid: false, errors };
+  }
+
+  if (preferences.repositories !== undefined) {
+    const repoValidation = validateRepositoryDisplaySettings(
+      preferences.repositories
+    );
+    if (!repoValidation.valid) {
+      errors.push(
+        ...repoValidation.errors.map((err) => `repositories: ${err}`)
+      );
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+function validateRepositoryDisplaySettings(
+  settings: RepositoryDisplaySettings
+): ValidationResult {
+  const errors: string[] = [];
+
+  if (!settings || typeof settings !== 'object') {
+    errors.push('repositories設定が不正です');
+    return { valid: false, errors };
+  }
+
+  if (
+    settings.perOrgLimit !== undefined &&
+    (typeof settings.perOrgLimit !== 'number' ||
+      !Number.isFinite(settings.perOrgLimit) ||
+      settings.perOrgLimit < 0)
+  ) {
+    errors.push('perOrgLimitは0以上の数値である必要があります');
+  }
+
+  if (
+    settings.updatedWithinDays !== undefined &&
+    (typeof settings.updatedWithinDays !== 'number' ||
+      !Number.isFinite(settings.updatedWithinDays) ||
+      settings.updatedWithinDays < 0)
+  ) {
+    errors.push('updatedWithinDaysは0以上の数値である必要があります');
   }
 
   return {

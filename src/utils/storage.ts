@@ -1,4 +1,10 @@
-import { Settings, DEFAULT_SETTINGS } from '../types/settings';
+import {
+  Settings,
+  DEFAULT_SETTINGS,
+  DisplayPreferences,
+  RepositoryDisplaySettings,
+  LayoutItem,
+} from '../types/settings';
 
 /**
  * Chrome Storage APIを使用した設定の保存・取得機能
@@ -11,7 +17,8 @@ import { Settings, DEFAULT_SETTINGS } from '../types/settings';
  */
 export async function saveSettings(settings: Settings): Promise<void> {
   try {
-    await chrome.storage.local.set({ settings });
+    const normalized = normalizeSettings(settings);
+    await chrome.storage.local.set({ settings: normalized });
   } catch (error) {
     console.error('Failed to save settings:', error);
     throw new Error('設定の保存に失敗しました');
@@ -25,11 +32,112 @@ export async function saveSettings(settings: Settings): Promise<void> {
 export async function getSettings(): Promise<Settings> {
   try {
     const result = await chrome.storage.local.get('settings');
-    return result.settings || DEFAULT_SETTINGS;
+    return normalizeSettings(result.settings);
   } catch (error) {
     console.error('Failed to get settings:', error);
-    return DEFAULT_SETTINGS;
+    return normalizeSettings(undefined);
   }
+}
+
+/**
+ * 設定オブジェクトを正規化して欠損値を補完
+ * @param settings 任意の設定オブジェクト
+ * @returns 正規化済み設定
+ */
+export function normalizeSettings(
+  settings: Partial<Settings> | undefined
+): Settings {
+  const layout = normalizeLayout(settings?.layout);
+  const cache = normalizeCache(settings?.cache);
+  const preferences = normalizePreferences(settings?.preferences);
+
+  return {
+    layout,
+    token:
+      typeof settings?.token === 'string'
+        ? settings.token
+        : DEFAULT_SETTINGS.token,
+    cache,
+    preferences,
+  };
+}
+
+function normalizeLayout(layout: LayoutItem[] | undefined): LayoutItem[] {
+  if (!layout || !Array.isArray(layout)) {
+    return DEFAULT_SETTINGS.layout.map((item) => ({ ...item }));
+  }
+
+  return layout.map((item, index) => {
+    if (!item || typeof item !== 'object') {
+      return { ...DEFAULT_SETTINGS.layout[index] };
+    }
+
+    return {
+      id: item.id ?? DEFAULT_SETTINGS.layout[index]?.id ?? `item-${index}`,
+      enabled:
+        typeof item.enabled === 'boolean'
+          ? item.enabled
+          : DEFAULT_SETTINGS.layout[index]?.enabled ?? true,
+      order:
+        typeof item.order === 'number'
+          ? item.order
+          : DEFAULT_SETTINGS.layout[index]?.order ?? index,
+    };
+  });
+}
+
+function normalizeCache(
+  cache:
+    | {
+        repositories?: Settings['cache']['repositories'];
+        issues?: Settings['cache']['issues'];
+        projects?: Settings['cache']['projects'];
+      }
+    | undefined
+): Settings['cache'] {
+  if (!cache || typeof cache !== 'object') {
+    return {};
+  }
+
+  return {
+    repositories: cache.repositories,
+    issues: cache.issues,
+    projects: cache.projects,
+  };
+}
+
+function normalizePreferences(
+  preferences: DisplayPreferences | undefined
+): DisplayPreferences {
+  const repoSettings = normalizeRepositorySettings(preferences?.repositories);
+  return {
+    repositories: repoSettings,
+  };
+}
+
+function normalizeRepositorySettings(
+  repositories: RepositoryDisplaySettings | undefined
+): RepositoryDisplaySettings {
+  const defaults = DEFAULT_SETTINGS.preferences.repositories;
+
+  const perOrgLimit =
+    typeof repositories?.perOrgLimit === 'number' &&
+    Number.isFinite(repositories.perOrgLimit) &&
+    repositories.perOrgLimit >= 0
+      ? Math.floor(repositories.perOrgLimit)
+      : defaults.perOrgLimit;
+
+  const updatedWithinDays =
+    typeof repositories?.updatedWithinDays === 'number' &&
+    Number.isFinite(repositories.updatedWithinDays) &&
+    repositories.updatedWithinDays >= 0
+      ? Math.floor(repositories.updatedWithinDays)
+      : defaults.updatedWithinDays;
+
+  return {
+    perOrgLimit,
+    updatedWithinDays,
+  };
 }
 
 /**

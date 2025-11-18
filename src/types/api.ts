@@ -23,6 +23,14 @@ export interface Repository {
 }
 
 /**
+ * Organization単位にグループ化されたリポジトリ
+ */
+export interface GroupedRepository {
+  organization: string;
+  repositories: Repository[];
+}
+
+/**
  * GitHubユーザーの定義
  */
 export interface User {

@@ -41,6 +41,13 @@ esbuild.build({
   outfile: 'dist/options/options.js',
 }).catch(() => process.exit(1));
 
+// Popup Script
+esbuild.build({
+  ...buildOptions,
+  entryPoints: ['src/popup/popup.ts'],
+  outfile: 'dist/popup/popup.js',
+}).catch(() => process.exit(1));
+
 // manifest.json、HTML、CSS、assetsをコピー
 console.log('Copying static files...');
 
@@ -51,6 +58,11 @@ fs.copyFileSync('manifest.json', 'dist/manifest.json');
 fs.mkdirSync('dist/options', { recursive: true });
 fs.copyFileSync('src/options/options.html', 'dist/options/options.html');
 fs.copyFileSync('src/options/options.css', 'dist/options/options.css');
+
+// popup
+fs.mkdirSync('dist/popup', { recursive: true });
+fs.copyFileSync('src/popup/popup.html', 'dist/popup/popup.html');
+fs.copyFileSync('src/popup/popup.css', 'dist/popup/popup.css');
 
 // assets
 function copyDir(src, dest) {

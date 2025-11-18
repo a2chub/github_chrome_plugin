@@ -76,7 +76,8 @@ main {
 }
 
 .form-group input[type='password'],
-.form-group input[type='text'] {
+.form-group input[type='text'],
+.form-group input[type='number'] {
   flex: 1;
   padding: 8px 12px;
   border: 1px solid #d0d7de;
@@ -85,7 +86,8 @@ main {
 }
 
 .form-group input[type='password']:focus,
-.form-group input[type='text']:focus {
+.form-group input[type='text']:focus,
+.form-group input[type='number']:focus {
   outline: none;
   border-color: #0969da;
   box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
@@ -101,6 +103,15 @@ main {
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.form-group-vertical {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.form-group-vertical label {
+  min-width: auto;
 }
 
 .btn {
@@ -187,6 +198,7 @@ main {
 .help-text {
   font-size: 13px;
   color: #57606a;
+  margin-top: 4px;
 }
 
 .help-text a {

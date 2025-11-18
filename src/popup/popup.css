@@ -1,0 +1,67 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: #f6f8fa;
+  color: #24292f;
+  min-width: 220px;
+}
+
+.popup {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.popup__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.popup__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.popup__subtitle {
+  font-size: 12px;
+  color: #57606a;
+}
+
+.popup__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.popup__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: #0969da;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.popup__button:hover {
+  background-color: #0757ba;
+}
+
+.popup__button:active {
+  background-color: #054daa;
+}
+
+

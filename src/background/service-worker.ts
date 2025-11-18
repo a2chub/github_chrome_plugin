@@ -1,4 +1,5 @@
 import { Message } from '../types/messages';
+import { Repository, GroupedRepository } from '../types/api';
 import {
   getSettings,
   saveSettings,
@@ -20,6 +21,7 @@ import {
   sortIssuesByUpdated,
   sortProjectsByUpdated,
 } from './github-api';
+import { RepositoryDisplaySettings } from '../types/settings';
 
 /**
  * Service Worker（Background Script）
@@ -186,6 +188,8 @@ async function handleGetData(message: Message) {
     // APIクライアントを初期化
     const client = initApiClient(token);
     const cache = getCacheManager();
+    const settings = await getSettings();
+    const repositoryPreferences = settings.preferences.repositories;
 
     const dataType = message.dataType;
     const result: {
@@ -197,19 +201,9 @@ async function handleGetData(message: Message) {
     // データタイプに応じてデータを取得
     if (dataType === 'all' || dataType === 'repositories') {
       const repositories = await fetchRepositories(client, cache);
-      const grouped = groupRepositoriesByOrganization(repositories);
-
-      // Organization別にソート
-      const sortedByOrg: Record<string, unknown[]> = {};
-      grouped.forEach((repos, org) => {
-        sortedByOrg[org] = sortRepositoriesByUpdated(repos);
-      });
-
-      result.repositories = Object.entries(sortedByOrg).map(
-        ([org, repos]) => ({
-          organization: org,
-          repositories: repos,
-        })
+      result.repositories = applyRepositoryPreferences(
+        repositories,
+        repositoryPreferences
       );
     }
 
@@ -235,6 +229,49 @@ async function handleGetData(message: Message) {
 
     throw error;
   }
+}
+
+function applyRepositoryPreferences(
+  repositories: Repository[],
+  preferences: RepositoryDisplaySettings
+): GroupedRepository[] {
+  const cutoff =
+    preferences.updatedWithinDays > 0
+      ? Date.now() - preferences.updatedWithinDays * 24 * 60 * 60 * 1000
+      : null;
+
+  const filteredByDate = repositories.filter((repo) => {
+    if (!cutoff) {
+      return true;
+    }
+
+    const updatedAt = Date.parse(repo.updated_at);
+    if (Number.isNaN(updatedAt)) {
+      return true;
+    }
+
+    return updatedAt >= cutoff;
+  });
+
+  const grouped = groupRepositoriesByOrganization(filteredByDate);
+  const result: GroupedRepository[] = [];
+
+  grouped.forEach((repos, org) => {
+    const sorted = sortRepositoriesByUpdated(repos);
+    const limited =
+      preferences.perOrgLimit > 0
+        ? sorted.slice(0, preferences.perOrgLimit)
+        : sorted;
+
+    if (limited.length > 0) {
+      result.push({
+        organization: org,
+        repositories: limited,
+      });
+    }
+  });
+
+  return result;
 }
 
 /**

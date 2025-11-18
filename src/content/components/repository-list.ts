@@ -1,4 +1,4 @@
-import { Repository } from '../../types/api';
+import { Repository, GroupedRepository } from '../../types/api';
 import { getData, saveData } from '../../utils/storage';
 import {
   createElement,
@@ -10,14 +10,6 @@ import {
 /**
  * リポジトリリストコンポーネント
  */
-
-/**
- * Organization別にグループ化されたリポジトリデータ
- */
-export interface GroupedRepositories {
-  organization: string;
-  repositories: Repository[];
-}
 
 type AccordionState = Record<string, boolean>;
 
@@ -51,7 +43,7 @@ async function persistAccordionState(): Promise<void> {
  */
 export async function renderRepositoryList(
   container: HTMLElement,
-  data: GroupedRepositories[]
+  data: GroupedRepository[]
 ): Promise<void> {
   // 既存のコンテンツをクリア
   container.innerHTML = '';
@@ -74,7 +66,7 @@ export async function renderRepositoryList(
  * Organizationセクションを作成
  */
 function createOrganizationSection(
-  group: GroupedRepositories,
+  group: GroupedRepository,
   accordionState: AccordionState
 ): HTMLElement {
   const section = createElement('div', {
@@ -158,7 +150,7 @@ function createOrganizationSection(
     },
   });
 
-  group.repositories.slice(0, 10).forEach((repo) => {
+  group.repositories.forEach((repo) => {
     const repoItem = createRepositoryItem(repo);
     list.appendChild(repoItem);
   });

@@ -1,5 +1,5 @@
 import { Settings } from './settings';
-import { Repository, Issue, Project } from './api';
+import { Issue, Project, GroupedRepository } from './api';
 
 /**
  * メッセージタイプの定義
@@ -66,7 +66,7 @@ export interface DataResponseMessage extends BaseMessage {
   type: 'DATA_RESPONSE';
   dataType: DataType;
   data: {
-    repositories?: Repository[];
+    repositories?: GroupedRepository[];
     issues?: Issue[];
     projects?: Project[];
   };

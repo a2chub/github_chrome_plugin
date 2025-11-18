@@ -1,5 +1,10 @@
 import { Message } from '../types/messages';
-import { Settings } from '../types/settings';
+import {
+  Settings,
+  DEFAULT_SETTINGS,
+  RepositoryDisplaySettings,
+} from '../types/settings';
+import { normalizeSettings } from '../utils/storage';
 
 /**
  * Options Page Script
@@ -36,7 +41,7 @@ async function loadSettings() {
     } as Message);
 
     if (response.success) {
-      currentSettings = response.data;
+      currentSettings = normalizeSettings(response.data);
       console.log('Settings loaded:', currentSettings);
     } else {
       console.error('Failed to load settings:', response.error);
@@ -71,6 +76,21 @@ function updateUI() {
       checkbox.checked = item.enabled;
     }
   });
+
+  const repoSettings = getRepositorySettings();
+  const perOrgInput = document.getElementById(
+    'repo-per-org-limit'
+  ) as HTMLInputElement | null;
+  if (perOrgInput) {
+    perOrgInput.value = String(repoSettings.perOrgLimit);
+  }
+
+  const updatedWithinInput = document.getElementById(
+    'repo-updated-within'
+  ) as HTMLInputElement | null;
+  if (updatedWithinInput) {
+    updatedWithinInput.value = String(repoSettings.updatedWithinDays);
+  }
 }
 
 /**
@@ -111,6 +131,21 @@ function setupEventListeners() {
   layoutCheckboxes.forEach((checkbox) => {
     checkbox.addEventListener('change', handleLayoutChange);
   });
+
+  // リポジトリ表示設定
+  const perOrgInput = document.getElementById(
+    'repo-per-org-limit'
+  ) as HTMLInputElement | null;
+  if (perOrgInput) {
+    perOrgInput.addEventListener('change', handleRepositoryLimitChange);
+  }
+
+  const updatedWithinInput = document.getElementById(
+    'repo-updated-within'
+  ) as HTMLInputElement | null;
+  if (updatedWithinInput) {
+    updatedWithinInput.addEventListener('change', handleRepositoryDaysChange);
+  }
 
   // Export/Importボタン
   const exportBtn = document.getElementById('export-settings');
@@ -228,6 +263,131 @@ async function handleLayoutChange(event: Event) {
   } catch (error) {
     console.error('Error saving layout settings:', error);
   }
+}
+
+/**
+ * Organizationごとのリポジトリ表示数変更ハンドラー
+ */
+async function handleRepositoryLimitChange(event: Event) {
+  if (!currentSettings) {
+    return;
+  }
+
+  const input = event.target as HTMLInputElement;
+  const repoSettings = getRepositorySettings();
+  const previousValue = repoSettings.perOrgLimit;
+  const value = Number.parseInt(input.value, 10);
+
+  if (Number.isNaN(value) || value < 0 || value > 50) {
+    showStatus(
+      'repository-status',
+      'error',
+      '0〜50の範囲で数値を入力してください'
+    );
+    input.value = String(previousValue);
+    return;
+  }
+
+  repoSettings.perOrgLimit = value;
+  currentSettings.preferences.repositories = repoSettings;
+
+  await persistCurrentSettings(
+    'repository-status',
+    'リポジトリ表示設定を保存しました'
+  );
+}
+
+/**
+ * リポジトリの最終更新日範囲変更ハンドラー
+ */
+async function handleRepositoryDaysChange(event: Event) {
+  if (!currentSettings) {
+    return;
+  }
+
+  const input = event.target as HTMLInputElement;
+  const repoSettings = getRepositorySettings();
+  const previousValue = repoSettings.updatedWithinDays;
+  const value = Number.parseInt(input.value, 10);
+
+  if (Number.isNaN(value) || value < 0 || value > 365) {
+    showStatus(
+      'repository-status',
+      'error',
+      '0〜365の範囲で数値を入力してください'
+    );
+    input.value = String(previousValue);
+    return;
+  }
+
+  repoSettings.updatedWithinDays = value;
+  currentSettings.preferences.repositories = repoSettings;
+
+  await persistCurrentSettings(
+    'repository-status',
+    'リポジトリ表示設定を保存しました'
+  );
+}
+
+/**
+ * 現在の設定を保存
+ */
+async function persistCurrentSettings(
+  statusElementId: string,
+  successMessage: string
+) {
+  if (!currentSettings) {
+    return;
+  }
+
+  try {
+    showStatus(statusElementId, 'info', '保存中...');
+
+    const response = await chrome.runtime.sendMessage({
+      type: 'SAVE_SETTINGS',
+      settings: currentSettings,
+    } as Message);
+
+    if (response.success) {
+      showStatus(statusElementId, 'success', successMessage);
+    } else {
+      const errorMessage =
+        typeof response.error === 'string'
+          ? response.error
+          : '保存に失敗しました';
+      showStatus(
+        statusElementId,
+        'error',
+        `保存に失敗しました: ${errorMessage}`
+      );
+    }
+  } catch (error) {
+    console.error('Error saving settings:', error);
+    showStatus(statusElementId, 'error', '保存に失敗しました');
+  }
+}
+
+/**
+ * リポジトリ表示設定を取得
+ */
+function getRepositorySettings(): RepositoryDisplaySettings {
+  if (!currentSettings) {
+    return { ...DEFAULT_SETTINGS.preferences.repositories };
+  }
+
+  if (!currentSettings.preferences) {
+    currentSettings.preferences = {
+      repositories: { ...DEFAULT_SETTINGS.preferences.repositories },
+    };
+  }
+
+  if (!currentSettings.preferences.repositories) {
+    currentSettings.preferences.repositories = {
+      ...DEFAULT_SETTINGS.preferences.repositories,
+    };
+  }
+
+  return currentSettings.preferences.repositories;
 }
 
 /**
