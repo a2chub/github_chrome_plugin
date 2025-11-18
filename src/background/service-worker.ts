@@ -1,11 +1,14 @@
 import { Message } from '../types/messages';
-import { Repository, GroupedRepository } from '../types/api';
+import { Issue, Project, Repository, GroupedRepository } from '../types/api';
 import {
   getSettings,
   saveSettings,
   saveToken as saveTokenToStorage,
   getToken,
+  saveDashboardSnapshot,
+  removeDashboardSnapshot,
 } from '../utils/storage';
+import type { CachedDashboardSnapshot } from '../types/settings';
 import {
   initApiClient,
   ApiError,
@@ -159,6 +162,33 @@ async function handleValidateToken() {
     // トークンを検証
     const result = await validateToken(client);
 
+    const snapshot: CachedDashboardSnapshot = {};
+
+    if (result.repositories !== undefined) {
+      snapshot.repositories = {
+        data: result.repositories as GroupedRepository[],
+        updatedAt: Date.now(),
+      };
+    }
+
+    if (result.issues !== undefined) {
+      snapshot.issues = {
+        data: result.issues as Issue[],
+        updatedAt: Date.now(),
+      };
+    }
+
+    if (result.projects !== undefined) {
+      snapshot.projects = {
+        data: result.projects as Project[],
+        updatedAt: Date.now(),
+      };
+    }
+
+    if (Object.keys(snapshot).length > 0) {
+      await saveDashboardSnapshot(snapshot);
+    }
+
     return result;
   } catch (error) {
     console.error('Token validation error:', error);
@@ -282,6 +312,7 @@ async function handleRefreshData() {
     // キャッシュをクリア
     const cache = getCacheManager();
     await cache.clearAll();
+    await removeDashboardSnapshot();
 
     console.log('Cache cleared, ready for refresh');
 

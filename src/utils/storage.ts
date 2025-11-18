@@ -4,6 +4,7 @@ import {
   DisplayPreferences,
   RepositoryDisplaySettings,
   LayoutItem,
+  CachedDashboardSnapshot,
 } from '../types/settings';
 
 /**
@@ -224,6 +225,56 @@ export async function clearAllData(): Promise<void> {
   } catch (error) {
     console.error('Failed to clear all data:', error);
     throw new Error('すべてのデータのクリアに失敗しました');
+  }
+}
+
+const DASHBOARD_SNAPSHOT_KEY = 'lastDashboardSnapshot';
+
+/**
+ * ダッシュボードに表示する直近データのスナップショットを保存
+ * @param snapshot 保存対象
+ */
+export async function saveDashboardSnapshot(
+  snapshot: CachedDashboardSnapshot
+): Promise<void> {
+  try {
+    await chrome.storage.local.set({
+      [DASHBOARD_SNAPSHOT_KEY]: snapshot,
+    });
+  } catch (error) {
+    console.error('Failed to save dashboard snapshot:', error);
+  }
+}
+
+/**
+ * スナップショットを取得
+ * @returns 保存済みスナップショットまたはnull
+ */
+export async function getDashboardSnapshot(): Promise<
+  CachedDashboardSnapshot | null
+> {
+  try {
+    const result = await chrome.storage.local.get(DASHBOARD_SNAPSHOT_KEY);
+    const snapshot = result[DASHBOARD_SNAPSHOT_KEY];
+    if (!snapshot || typeof snapshot !== 'object') {
+      return null;
+    }
+
+    return snapshot as CachedDashboardSnapshot;
+  } catch (error) {
+    console.error('Failed to get dashboard snapshot:', error);
+    return null;
+  }
+}
+
+/**
+ * スナップショットを削除
+ */
+export async function removeDashboardSnapshot(): Promise<void> {
+  try {
+    await chrome.storage.local.remove(DASHBOARD_SNAPSHOT_KEY);
+  } catch (error) {
+    console.error('Failed to remove dashboard snapshot:', error);
   }
 }
 

@@ -10,6 +10,7 @@ import {
   setHeaderLoadingState,
 } from './layout-renderer';
 import { createNotificationBanner } from './dom-manipulator';
+import { getDashboardSnapshot } from '../utils/storage';
 
 /**
  * Content Script
@@ -111,6 +112,7 @@ async function applyCustomizations() {
     applyLayout(currentSettings, { isCustomMode: isCustomLayoutActive });
     addLayoutToggleToSearchForm(true);
     console.log('Layout applied successfully');
+    await renderCachedDashboardData();
 
     // PATが設定されているかチェック
     if (!currentSettings.token || currentSettings.token.trim() === '') {
@@ -295,6 +297,48 @@ async function renderData(data: {
       projects: data.projects,
     });
   }
+}
+
+async function renderCachedDashboardData(): Promise<void> {
+  if (!isCustomLayoutActive) {
+    return;
+  }
+
+  const snapshot = await getDashboardSnapshot();
+  if (!snapshot) {
+    return;
+  }
+
+  const cachedData: {
+    repositories?: GroupedRepository[];
+    issues?: Issue[];
+    projects?: Project[];
+  } = {};
+
+  if (snapshot.repositories?.data?.length) {
+    cachedData.repositories = snapshot.repositories.data;
+  }
+
+  if (snapshot.issues?.data?.length) {
+    cachedData.issues = snapshot.issues.data;
+  }
+
+  if (snapshot.projects?.data?.length) {
+    cachedData.projects = snapshot.projects.data;
+  }
+
+  if (Object.keys(cachedData).length === 0) {
+    return;
+  }
+
+  console.log('Rendering cached dashboard data:', {
+    repositoriesUpdatedAt: snapshot.repositories?.updatedAt,
+    issuesUpdatedAt: snapshot.issues?.updatedAt,
+    projectsUpdatedAt: snapshot.projects?.updatedAt,
+  });
+
+  setHeaderLoadingState(true, 'キャッシュされたデータを表示しています…');
+  await renderData(cachedData);
 }
 
 /**

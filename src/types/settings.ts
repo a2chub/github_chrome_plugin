@@ -1,3 +1,5 @@
+import type { GroupedRepository, Issue, Project } from './api';
+
 /**
  * レイアウトアイテムの定義
  */
@@ -21,6 +23,20 @@ export interface CacheEntry<T = unknown> {
   data: T;
   timestamp: number;
   ttl: number;
+}
+
+/**
+ * キャッシュのスナップショット
+ */
+export interface CachedSection<T> {
+  data: T;
+  updatedAt: number;
+}
+
+export interface CachedDashboardSnapshot {
+  repositories?: CachedSection<GroupedRepository[]>;
+  issues?: CachedSection<Issue[]>;
+  projects?: CachedSection<Project[]>;
 }
 
 /**
