@@ -1,4 +1,5 @@
 import { GitHubError, RateLimit } from '../types/api';
+import { logger } from './logger';
 
 /**
  * GitHub APIクライアント
@@ -151,7 +152,7 @@ export class GitHubApiClient {
       // リトライ処理
       if (retryCount < MAX_RETRIES) {
         const delay = this.calculateRetryDelay(retryCount);
-        console.log(
+        logger.warn(
           `Retrying request after ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`
         );
         await this.sleep(delay);
@@ -200,7 +201,8 @@ export class GitHubApiClient {
           delay = this.calculateRetryDelay(retryCount);
         }
 
-        console.log(`Rate limited. Retrying after ${delay}ms`);
+
+        logger.warn(`Rate limited. Retrying after ${delay}ms`);
         await this.sleep(delay);
         return this.request<T>(endpoint, options, retryCount + 1);
       }
@@ -215,7 +217,7 @@ export class GitHubApiClient {
     // 500番台のサーバーエラー（リトライ可能）
     if (status >= 500 && retryCount < MAX_RETRIES) {
       const delay = this.calculateRetryDelay(retryCount);
-      console.log(
+      logger.warn(
         `Server error (${status}). Retrying after ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`
       );
       await this.sleep(delay);

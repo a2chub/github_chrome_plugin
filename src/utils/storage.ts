@@ -6,6 +6,7 @@ import {
   LayoutItem,
   CachedDashboardSnapshot,
 } from '../types/settings';
+import { logger } from './logger';
 
 /**
  * Chrome Storage APIを使用した設定の保存・取得機能
@@ -21,7 +22,7 @@ export async function saveSettings(settings: Settings): Promise<void> {
     const normalized = normalizeSettings(settings);
     await chrome.storage.local.set({ settings: normalized });
   } catch (error) {
-    console.error('Failed to save settings:', error);
+    logger.error('Failed to save settings:', error);
     throw new Error('設定の保存に失敗しました');
   }
 }
@@ -35,7 +36,7 @@ export async function getSettings(): Promise<Settings> {
     const result = await chrome.storage.local.get('settings');
     return normalizeSettings(result.settings);
   } catch (error) {
-    console.error('Failed to get settings:', error);
+    logger.error('Failed to get settings:', error);
     return normalizeSettings(undefined);
   }
 }
@@ -90,10 +91,10 @@ function normalizeLayout(layout: LayoutItem[] | undefined): LayoutItem[] {
 function normalizeCache(
   cache:
     | {
-        repositories?: Settings['cache']['repositories'];
-        issues?: Settings['cache']['issues'];
-        projects?: Settings['cache']['projects'];
-      }
+      repositories?: Settings['cache']['repositories'];
+      issues?: Settings['cache']['issues'];
+      projects?: Settings['cache']['projects'];
+    }
     | undefined
 ): Settings['cache'] {
   if (!cache || typeof cache !== 'object') {
@@ -123,15 +124,15 @@ function normalizeRepositorySettings(
 
   const perOrgLimit =
     typeof repositories?.perOrgLimit === 'number' &&
-    Number.isFinite(repositories.perOrgLimit) &&
-    repositories.perOrgLimit >= 0
+      Number.isFinite(repositories.perOrgLimit) &&
+      repositories.perOrgLimit >= 0
       ? Math.floor(repositories.perOrgLimit)
       : defaults.perOrgLimit;
 
   const updatedWithinDays =
     typeof repositories?.updatedWithinDays === 'number' &&
-    Number.isFinite(repositories.updatedWithinDays) &&
-    repositories.updatedWithinDays >= 0
+      Number.isFinite(repositories.updatedWithinDays) &&
+      repositories.updatedWithinDays >= 0
       ? Math.floor(repositories.updatedWithinDays)
       : defaults.updatedWithinDays;
 
@@ -152,7 +153,7 @@ export async function saveToken(token: string): Promise<void> {
     settings.token = token;
     await saveSettings(settings);
   } catch (error) {
-    console.error('Failed to save token:', error);
+    logger.error('Failed to save token:', error);
     throw new Error('トークンの保存に失敗しました');
   }
 }
@@ -166,7 +167,7 @@ export async function getToken(): Promise<string> {
     const settings = await getSettings();
     return settings.token || '';
   } catch (error) {
-    console.error('Failed to get token:', error);
+    logger.error('Failed to get token:', error);
     return '';
   }
 }
@@ -181,7 +182,7 @@ export async function saveData<T>(key: string, data: T): Promise<void> {
   try {
     await chrome.storage.local.set({ [key]: data });
   } catch (error) {
-    console.error(`Failed to save data for key "${key}":`, error);
+    logger.error(`Failed to save data for key "${key}":`, error);
     throw new Error(`データの保存に失敗しました: ${key}`);
   }
 }
@@ -196,7 +197,7 @@ export async function getData<T>(key: string): Promise<T | null> {
     const result = await chrome.storage.local.get(key);
     return result[key] || null;
   } catch (error) {
-    console.error(`Failed to get data for key "${key}":`, error);
+    logger.error(`Failed to get data for key "${key}":`, error);
     return null;
   }
 }
@@ -210,7 +211,7 @@ export async function removeData(key: string): Promise<void> {
   try {
     await chrome.storage.local.remove(key);
   } catch (error) {
-    console.error(`Failed to remove data for key "${key}":`, error);
+    logger.error(`Failed to remove data for key "${key}":`, error);
     throw new Error(`データの削除に失敗しました: ${key}`);
   }
 }
@@ -223,7 +224,7 @@ export async function clearAllData(): Promise<void> {
   try {
     await chrome.storage.local.clear();
   } catch (error) {
-    console.error('Failed to clear all data:', error);
+    logger.error('Failed to clear all data:', error);
     throw new Error('すべてのデータのクリアに失敗しました');
   }
 }
@@ -242,7 +243,7 @@ export async function saveDashboardSnapshot(
       [DASHBOARD_SNAPSHOT_KEY]: snapshot,
     });
   } catch (error) {
-    console.error('Failed to save dashboard snapshot:', error);
+    logger.error('Failed to save dashboard snapshot:', error);
   }
 }
 
@@ -262,7 +263,7 @@ export async function getDashboardSnapshot(): Promise<
 
     return snapshot as CachedDashboardSnapshot;
   } catch (error) {
-    console.error('Failed to get dashboard snapshot:', error);
+    logger.error('Failed to get dashboard snapshot:', error);
     return null;
   }
 }
@@ -274,7 +275,7 @@ export async function removeDashboardSnapshot(): Promise<void> {
   try {
     await chrome.storage.local.remove(DASHBOARD_SNAPSHOT_KEY);
   } catch (error) {
-    console.error('Failed to remove dashboard snapshot:', error);
+    logger.error('Failed to remove dashboard snapshot:', error);
   }
 }
 

@@ -64,6 +64,12 @@ fs.mkdirSync('dist/popup', { recursive: true });
 fs.copyFileSync('src/popup/popup.html', 'dist/popup/popup.html');
 fs.copyFileSync('src/popup/popup.css', 'dist/popup/popup.css');
 
+// styles
+fs.mkdirSync('dist/styles', { recursive: true });
+if (fs.existsSync('src/styles/main.css')) {
+  fs.copyFileSync('src/styles/main.css', 'dist/styles/main.css');
+}
+
 // assets
 function copyDir(src, dest) {
   fs.mkdirSync(dest, { recursive: true });

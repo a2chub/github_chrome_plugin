@@ -5,7 +5,7 @@ import {
   createEmptyState,
   createErrorElement,
   formatRelativeTime,
-} from '../dom-manipulator';
+} from '../../utils/dom';
 
 /**
  * リポジトリリストコンポーネント
@@ -140,13 +140,13 @@ function createOrganizationSection(
   header.appendChild(toggleButton);
   section.appendChild(header);
 
-  // リポジトリリスト
+  // リポジトリリスト（2カラムグリッド）
   const list = createElement('div', {
     className: 'repo-list',
     styles: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '8px',
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, 1fr)',
+      gap: '6px',
     },
   });
 
@@ -165,7 +165,7 @@ function createOrganizationSection(
   function setExpanded(nextState: boolean) {
     isExpanded = nextState;
     accordionState[group.organization] = isExpanded;
-    list.style.display = isExpanded ? 'flex' : 'none';
+    list.style.display = isExpanded ? 'grid' : 'none';
     toggleButton.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
     toggleIcon.textContent = isExpanded ? '\u25BE' : '\u25B8';
     section.setAttribute('data-expanded', isExpanded ? 'true' : 'false');
@@ -197,14 +197,15 @@ function createRepositoryItem(repo: Repository): HTMLElement {
     className: 'repo-item',
     styles: {
       display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '8px 12px',
+      flexDirection: 'column',
+      padding: '6px 10px',
       borderRadius: '6px',
       border: '1px solid #d0d7de',
       backgroundColor: '#f6f8fa',
       transition: 'background-color 0.2s',
       cursor: 'pointer',
+      minWidth: '0',
+      gap: '2px',
     },
   });
 
@@ -221,94 +222,63 @@ function createRepositoryItem(repo: Repository): HTMLElement {
     window.open(repo.html_url, '_blank');
   });
 
-  // 左側: リポジトリ情報
-  const leftSide = createElement('div', {
-    className: 'repo-info',
-    styles: {
-      flex: '1',
-      minWidth: '0',
-    },
-  });
-
+  // 1行目: リポジトリ名（全幅使用）
   const name = createElement('div', {
     textContent: repo.name,
     className: 'repo-name',
     styles: {
-      fontSize: '14px',
+      fontSize: '13px',
       fontWeight: '600',
       color: '#0969da',
-      marginBottom: '4px',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
       whiteSpace: 'nowrap',
     },
   });
+  item.appendChild(name);
 
-  leftSide.appendChild(name);
-
-  if (repo.description) {
-    const description = createElement('div', {
-      textContent: repo.description,
-      className: 'repo-description',
-      styles: {
-        fontSize: '12px',
-        color: '#57606a',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
-      },
-    });
-    leftSide.appendChild(description);
-  }
-
-  item.appendChild(leftSide);
-
-  // 右側: メタ情報
-  const rightSide = createElement('div', {
+  // 2行目: メタ情報（言語・スター・更新日時）
+  const meta = createElement('div', {
     className: 'repo-meta',
     styles: {
       display: 'flex',
       alignItems: 'center',
-      gap: '12px',
-      fontSize: '12px',
+      gap: '6px',
+      fontSize: '11px',
       color: '#57606a',
-      flexShrink: '0',
     },
   });
 
-  // 言語
   if (repo.language) {
     const language = createElement('span', {
       textContent: repo.language,
       className: 'repo-language',
       styles: {
-        padding: '2px 8px',
+        padding: '1px 6px',
         borderRadius: '12px',
         backgroundColor: '#ddf4ff',
         color: '#0969da',
-        fontSize: '11px',
+        fontSize: '10px',
       },
     });
-    rightSide.appendChild(language);
+    meta.appendChild(language);
   }
 
-  // スター数
   if (repo.stargazers_count > 0) {
     const stars = createElement('span', {
-      textContent: `⭐ ${repo.stargazers_count}`,
+      textContent: `\u2605 ${repo.stargazers_count}`,
       className: 'repo-stars',
     });
-    rightSide.appendChild(stars);
+    meta.appendChild(stars);
   }
 
-  // 更新日時
   const updated = createElement('span', {
     textContent: formatRelativeTime(repo.updated_at),
     className: 'repo-updated',
   });
-  rightSide.appendChild(updated);
+  meta.appendChild(updated);
 
-  item.appendChild(rightSide);
+  item.appendChild(meta);
 
   return item;
 }

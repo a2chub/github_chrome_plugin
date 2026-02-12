@@ -1,6 +1,7 @@
 import { User, Organization, Repository, Issue, Project } from '../types/api';
-import { GitHubApiClient, ApiResponse } from './api-client';
-import { CacheManager } from './cache-manager';
+import { GitHubApiClient, ApiResponse } from '../utils/api-client';
+import { CacheManager } from '../utils/cache-manager';
+import { logger } from '../utils/logger';
 
 /**
  * GitHub API機能
@@ -26,7 +27,7 @@ export async function fetchUser(
   }
 
   // APIから取得
-  console.log('Fetching user from API...');
+  logger.debug('Fetching user from API...');
   const response: ApiResponse<User> = await client.get('/user');
 
   // キャッシュに保存（5分）
@@ -54,7 +55,7 @@ export async function fetchOrganizations(
   }
 
   // APIから取得
-  console.log('Fetching organizations from API...');
+  logger.debug('Fetching organizations from API...');
   const response: ApiResponse<Organization[]> = await client.get('/user/orgs');
 
   // キャッシュに保存（5分）
@@ -82,39 +83,39 @@ export async function fetchRepositories(
   }
 
   // APIから取得
-  console.log('Fetching repositories from API...');
-  
+  logger.debug('Fetching repositories from API...');
+
   const allRepos: Repository[] = [];
   let page = 1;
   const perPage = 100;
-  
+
   // ページネーションで全リポジトリを取得
   while (true) {
     const response: ApiResponse<Repository[]> = await client.get(
       `/user/repos?sort=updated&per_page=${perPage}&page=${page}&affiliation=owner,collaborator,organization_member`
     );
-    
+
     if (response.data.length === 0) {
       break;
     }
-    
+
     allRepos.push(...response.data);
-    
+
     // 100件未満の場合は最後のページ
     if (response.data.length < perPage) {
       break;
     }
-    
+
     page++;
-    
+
     // 安全のため、10ページ（1000件）までで停止
     if (page > 10) {
-      console.warn('Reached maximum page limit (10 pages)');
+      logger.warn('Reached maximum page limit (10 pages)');
       break;
     }
   }
-  
-  console.log(`Fetched ${allRepos.length} repositories`);
+
+  logger.debug(`Fetched ${allRepos.length} repositories`);
 
   // キャッシュに保存（5分）
   await cache.set(cacheKey, allRepos, 5 * 60);
@@ -141,7 +142,7 @@ export async function fetchMentionedIssues(
   }
 
   // APIから取得
-  console.log('Fetching mentioned issues from API...');
+  logger.debug('Fetching mentioned issues from API...');
   const response: ApiResponse<Issue[]> = await client.get(
     '/issues?filter=mentioned&state=all&per_page=50'
   );
@@ -174,7 +175,7 @@ export async function fetchProjects(
   // APIから取得
   // 注: GitHub Projects (Classic) のエンドポイント
   // Projects V2を使用する場合は別のエンドポイントを使用する必要がある
-  console.log('Fetching projects from API...');
+  logger.debug('Fetching projects from API...');
 
   try {
     const response: ApiResponse<Project[]> = await client.get('/user/projects', {
@@ -188,7 +189,7 @@ export async function fetchProjects(
 
     return response.data;
   } catch (error) {
-    console.error('Failed to fetch projects:', error);
+    logger.error('Failed to fetch projects:', error);
     // プロジェクトAPIがエラーの場合は空配列を返す
     return [];
   }
@@ -203,10 +204,10 @@ export async function validateToken(
   client: GitHubApiClient
 ): Promise<{ valid: boolean; message?: string; user?: User }> {
   try {
-    console.log('Validating token...');
+    logger.debug('Validating token...');
     const response: ApiResponse<User> = await client.get('/user');
 
-    console.log('Token is valid:', response.data.login);
+    logger.info('Token is valid:', response.data.login);
 
     return {
       valid: true,
@@ -214,7 +215,7 @@ export async function validateToken(
       user: response.data,
     };
   } catch (error) {
-    console.error('Token validation failed:', error);
+    logger.error('Token validation failed:', error);
 
     if (error instanceof Error) {
       return {

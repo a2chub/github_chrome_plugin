@@ -12,14 +12,14 @@ Chrome拡張機能の基本構造を構築し、開発環境を整備する。
 ### タスク
 
 #### 1.1 プロジェクト初期化
-- [ ] `package.json`の作成
-- [ ] TypeScript設定（`tsconfig.json`）
-- [ ] ビルドツールの設定（webpack/vite/esbuild）
-- [ ] ESLint/Prettierの設定
-- [ ] `.gitignore`の確認・更新
+- [x] `package.json`の作成
+- [x] TypeScript設定（`tsconfig.json`）
+- [x] ビルドツールの設定（webpack/vite/esbuild）
+- [x] ESLint/Prettierの設定
+- [x] `.gitignore`の確認・更新
 
 #### 1.2 Manifest V3の作成
-- [ ] `manifest.json`の作成
+- [x] `manifest.json`の作成
   - 拡張機能の基本情報（name, version, description）
   - permissions設定
   - content_scripts設定
@@ -28,21 +28,21 @@ Chrome拡張機能の基本構造を構築し、開発環境を整備する。
   - icons設定
 
 #### 1.3 基本ファイル構造の作成
-- [ ] `src/background/service-worker.ts`の作成
-- [ ] `src/content/content-script.ts`の作成
-- [ ] `src/options/options.html`の作成
-- [ ] `src/types/`ディレクトリの作成
-- [ ] `src/utils/`ディレクトリの作成
+- [x] `src/background/service-worker.ts`の作成
+- [x] `src/content/content-script.ts`の作成
+- [x] `src/options/options.html`の作成
+- [x] `src/types/`ディレクトリの作成
+- [x] `src/utils/`ディレクトリの作成
 
 #### 1.4 型定義の作成
-- [ ] `src/types/settings.ts` - 設定データの型定義
-- [ ] `src/types/api.ts` - APIレスポンスの型定義
-- [ ] `src/types/messages.ts` - メッセージパッシングの型定義
+- [x] `src/types/settings.ts` - 設定データの型定義
+- [x] `src/types/api.ts` - APIレスポンスの型定義
+- [x] `src/types/messages.ts` - メッセージパッシングの型定義
 
 #### 1.5 基本機能の実装
-- [ ] Chrome Storage APIのラッパー実装（`src/utils/storage.ts`）
-- [ ] メッセージパッシングの基本実装
-- [ ] Content Scriptの基本注入確認
+- [x] Chrome Storage APIのラッパー実装（`src/utils/storage.ts`）
+- [x] メッセージパッシングの基本実装
+- [x] Content Scriptの基本注入確認
 
 ### 完了基準
 - 拡張機能がChromeに読み込める
@@ -63,37 +63,37 @@ Chrome拡張機能の基本構造を構築し、開発環境を整備する。
 ### タスク
 
 #### 2.1 Options Pageの実装
-- [ ] `src/options/options.html`の作成
+- [x] `src/options/options.html`の作成
   - 認証設定セクション
   - レイアウト設定セクション
   - 並び順セクション
   - Export/Importセクション
-- [ ] `src/options/options.css`の作成
+- [x] `src/options/options.css`の作成
   - レスポンシブデザイン
   - GitHub風のスタイル
-- [ ] `src/options/options.ts`の実装
+- [x] `src/options/options.ts`の実装
   - 設定の読み込み・保存
   - PAT入力・保存機能
   - チェックボックスによる表示/非表示設定
   - ドラッグ&ドロップによる並び順設定
 
 #### 2.2 設定管理機能の実装
-- [ ] 設定のデフォルト値定義
-- [ ] 設定のバリデーション実装
-- [ ] 設定変更の即座反映機能
+- [x] 設定のデフォルト値定義
+- [x] 設定のバリデーション実装
+- [x] 設定変更の即座反映機能
 
 #### 2.3 DOM操作基盤の実装
-- [ ] `src/content/dom-manipulator.ts`の実装
+- [x] `src/content/dom-manipulator.ts`の実装
   - 既存要素の削除機能
   - 既存要素の非表示機能
   - 新規要素の追加機能
-- [ ] `src/content/layout-renderer.ts`の実装
+- [x] `src/content/layout-renderer.ts`の実装
   - レイアウトテンプレートの定義
   - レイアウトの適用機能
 
 #### 2.4 メッセージパッシングの拡張
-- [ ] 設定変更通知の実装
-- [ ] Content Scriptへの設定送信機能
+- [x] 設定変更通知の実装
+- [x] Content Scriptへの設定送信機能
 
 ### 完了基準
 - Options Pageで設定を変更できる
@@ -114,32 +114,32 @@ GitHub APIとの通信機能を実装し、認証管理を行う。
 ### タスク
 
 #### 3.1 APIクライアントの実装
-- [ ] `src/background/api-client.ts`の実装
+- [x] `src/background/api-client.ts`の実装
   - Fetch APIを使用したHTTPクライアント
   - 認証ヘッダーの追加
   - エラーハンドリング
   - リトライ機能（指数バックオフ）
 
 #### 3.2 認証管理の実装
-- [ ] PATの保存・取得機能
-- [ ] PATの有効性検証機能
-- [ ] 認証エラー時の処理
+- [x] PATの保存・取得機能
+- [x] PATの有効性検証機能
+- [x] 認証エラー時の処理
 
 #### 3.3 キャッシュ管理の実装
-- [ ] `src/background/cache-manager.ts`の実装
+- [x] `src/background/cache-manager.ts`の実装
   - キャッシュの保存・取得
   - TTL（Time To Live）の管理
   - キャッシュの無効化
 
 #### 3.4 レートリミット管理の実装
-- [ ] APIレートリミットの監視
-- [ ] レートリミット接近時の警告
-- [ ] レートリミット超過時の処理
+- [x] APIレートリミットの監視
+- [x] レートリミット接近時の警告
+- [x] レートリミット超過時の処理
 
 #### 3.5 基本API呼び出しの実装
-- [ ] `GET /user` - ユーザー情報取得
-- [ ] `GET /user/orgs` - Organization一覧取得
-- [ ] エラーハンドリングの実装
+- [x] `GET /user` - ユーザー情報取得
+- [x] `GET /user/orgs` - Organization一覧取得
+- [x] エラーハンドリングの実装
 
 ### 完了基準
 - PATを入力して保存できる
@@ -161,19 +161,19 @@ GitHub APIとの通信機能を実装し、認証管理を行う。
 ### タスク
 
 #### 4.1 Organization別リポジトリリストの実装
-- [ ] `GET /user/repos` API呼び出しの実装
-- [ ] `GET /orgs/{org}/repos` API呼び出しの実装
-- [ ] リポジトリデータのOrganization別グループ化
-- [ ] 使用頻度・更新日時によるソート機能
-- [ ] `src/content/components/repository-list.ts`の実装
+- [x] `GET /user/repos` API呼び出しの実装
+- [x] `GET /orgs/{org}/repos` API呼び出しの実装
+- [x] リポジトリデータのOrganization別グループ化
+- [x] 使用頻度・更新日時によるソート機能
+- [x] `src/content/components/repository-list.ts`の実装
   - リポジトリリストの表示
   - リンクの生成
   - 更新日時の表示
 
 #### 4.2 メンションされたIssueリストの実装
-- [ ] `GET /issues` API呼び出しの実装（メンションされたIssue取得）
-- [ ] Issueデータのフィルタリング（メンションのみ）
-- [ ] `src/content/components/issue-list.ts`の実装
+- [x] `GET /issues` API呼び出しの実装（メンションされたIssue取得）
+- [x] Issueデータのフィルタリング（メンションのみ）
+- [x] `src/content/components/issue-list.ts`の実装
   - Issueリストの表示
   - オープン/クローズ状態の表示
   - リポジトリ名とIssueタイトルの表示
@@ -181,24 +181,24 @@ GitHub APIとの通信機能を実装し、認証管理を行う。
   - 更新日時の表示
 
 #### 4.3 更新順プロジェクトサマリーの実装
-- [ ] `GET /user/projects` API呼び出しの実装
-- [ ] `GET /orgs/{org}/projects` API呼び出しの実装
-- [ ] プロジェクトデータの更新日時によるソート
-- [ ] `src/content/components/project-summary.ts`の実装
+- [x] `GET /user/projects` API呼び出しの実装
+- [x] `GET /orgs/{org}/projects` API呼び出しの実装
+- [x] プロジェクトデータの更新日時によるソート
+- [x] `src/content/components/project-summary.ts`の実装
   - プロジェクトサマリーの表示
   - 更新内容のサマリー表示
   - リンクの生成
   - 更新日時の表示
 
 #### 4.4 レイアウト統合
-- [ ] 各コンポーネントをレイアウトに統合
-- [ ] 設定に基づく表示/非表示の制御
-- [ ] 設定に基づく並び順の適用
+- [x] 各コンポーネントをレイアウトに統合
+- [x] 設定に基づく表示/非表示の制御
+- [x] 設定に基づく並び順の適用
 
 #### 4.5 データ更新機能の実装
-- [ ] 定期的なデータ更新機能（ポーリング）
-- [ ] 手動更新機能（リフレッシュボタン）
-- [ ] 更新中のローディング表示
+- [x] 定期的なデータ更新機能（ポーリング）
+- [x] 手動更新機能（リフレッシュボタン）
+- [x] 更新中のローディング表示
 
 ### 完了基準
 - Organization別にリポジトリリストが表示される
@@ -220,26 +220,26 @@ GitHub APIとの通信機能を実装し、認証管理を行う。
 ### タスク
 
 #### 5.1 Export機能の実装
-- [ ] 設定データのJSONシリアライズ
-- [ ] JSONファイルのダウンロード機能
-- [ ] ファイル名の生成（タイムスタンプ付き）
+- [x] 設定データのJSONシリアライズ
+- [x] JSONファイルのダウンロード機能
+- [x] ファイル名の生成（タイムスタンプ付き）
 
 #### 5.2 Import機能の実装
-- [ ] JSONファイルの読み込み機能
-- [ ] JSONデータのバリデーション
-- [ ] 設定データのデシリアライズ
-- [ ] 設定の適用機能
+- [x] JSONファイルの読み込み機能
+- [x] JSONデータのバリデーション
+- [x] 設定データのデシリアライズ
+- [x] 設定の適用機能
 
 #### 5.3 UIの実装
-- [ ] Exportボタンの実装
-- [ ] Importボタンの実装
-- [ ] ファイル選択ダイアログの実装
-- [ ] 成功/エラーメッセージの表示
+- [x] Exportボタンの実装
+- [x] Importボタンの実装
+- [x] ファイル選択ダイアログの実装
+- [x] 成功/エラーメッセージの表示
 
 #### 5.4 エラーハンドリング
-- [ ] 不正なJSON形式の検証
-- [ ] 設定データの互換性チェック
-- [ ] エラーメッセージの表示
+- [x] 不正なJSON形式の検証
+- [x] 設定データの互換性チェック
+- [x] エラーメッセージの表示
 
 ### 完了基準
 - 設定をJSONファイルとしてエクスポートできる
@@ -260,41 +260,41 @@ GitHub APIとの通信機能を実装し、認証管理を行う。
 ### タスク
 
 #### 6.1 エラーハンドリングの強化
-- [ ] APIエラーの詳細な処理
+- [x] APIエラーの詳細な処理
   - 401 Unauthorized → PAT再入力要求
   - 403 Forbidden → 権限不足メッセージ
   - 404 Not Found → スキップ
   - 429 Too Many Requests → リトライ待機
   - 500 Server Error → リトライ
-- [ ] ネットワークエラーの処理
+- [x] ネットワークエラーの処理
   - タイムアウト処理（30秒）
   - 接続エラー時のリトライ
-- [ ] データエラーの処理
+- [x] データエラーの処理
   - JSONパースエラー
   - データ不整合の検証
 
 #### 6.2 パフォーマンス最適化
-- [ ] DOM操作の最適化
+- [x] DOM操作の最適化
   - DocumentFragmentの使用
   - 一括DOM操作
   - 必要最小限の再描画
-- [ ] キャッシュ戦略の最適化
+- [x] キャッシュ戦略の最適化
   - キャッシュTTLの調整
   - キャッシュ無効化の改善
-- [ ] API呼び出しの最適化
+- [x] API呼び出しの最適化
   - バッチリクエストの検討
   - 並列リクエストの制御
 
 #### 6.3 ユーザー体験の改善
-- [ ] ローディング表示の改善
-- [ ] エラーメッセージの改善
-- [ ] 空状態の表示（データがない場合）
-- [ ] 更新ボタンの実装
+- [x] ローディング表示の改善
+- [x] エラーメッセージの改善
+- [x] 空状態の表示（データがない場合）
+- [x] 更新ボタンの実装
 
 #### 6.4 ログ機能の実装
-- [ ] デバッグログの実装
-- [ ] エラーログの実装
-- [ ] ログレベルの設定
+- [x] デバッグログの実装
+- [x] エラーログの実装
+- [x] ログレベルの設定
 
 ### 完了基準
 - すべてのエラーケースが適切に処理される

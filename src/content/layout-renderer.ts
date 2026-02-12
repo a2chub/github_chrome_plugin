@@ -1,4 +1,5 @@
 import { Settings } from '../types/settings';
+import { logger } from '../utils/logger';
 import { Issue, Project } from '../types/api';
 import {
   createContainer,
@@ -10,7 +11,7 @@ import {
   showElements,
   createElement,
   createSpinnerIcon,
-} from './dom-manipulator';
+} from '../utils/dom';
 import { renderRepositoryList, renderRepositoryError } from './components/repository-list';
 import {
   renderIssueList,
@@ -39,99 +40,12 @@ let headerLoadingTextRef: HTMLElement | null = null;
  * GitHubダッシュボードのカスタムレイアウトを構築する
  */
 
-/**
- * カスタムスタイルを注入（初回のみ）
- */
-function ensureGlobalStyles(): void {
-  if (document.getElementById('github-dashboard-customizer-styles')) {
-    return;
-  }
-
-  const style = document.createElement('style');
-  style.id = 'github-dashboard-customizer-styles';
-  style.textContent = `
-    @keyframes gdc-spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-
-    .gdc-spinner-icon {
-      display: inline-block;
-      border: 2px solid #d0d7de;
-      border-top-color: #0969da;
-      border-radius: 50%;
-      animation: gdc-spin 0.8s linear infinite;
-      box-sizing: border-box;
-    }
-
-    .gdc-header {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .gdc-header-main {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .gdc-title-block {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .gdc-title {
-      font-size: 22px;
-      font-weight: 600;
-      color: #24292f;
-      margin: 0;
-    }
-
-    .gdc-subtitle {
-      font-size: 13px;
-      color: #57606a;
-      margin: 0;
-    }
-
-    .gdc-header-controls {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .gdc-loading-indicator {
-      display: none;
-      align-items: center;
-      gap: 8px;
-      color: #57606a;
-      font-size: 13px;
-    }
-
-    .gdc-loading-indicator.is-active {
-      display: inline-flex;
-    }
-
-    .gdc-embedded-sidebar {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-  `;
-
-  document.head.appendChild(style);
-}
 
 /**
  * 既存のGitHubダッシュボード要素を非表示
  */
 export function clearDashboard(): void {
-  console.log('Clearing existing dashboard elements...');
+  logger.debug('Clearing existing dashboard elements...');
 
   DASHBOARD_SELECTORS.forEach((selector) => {
     hideElements(selector);
@@ -142,7 +56,7 @@ export function clearDashboard(): void {
  * 既存のGitHubダッシュボード要素を再表示
  */
 export function restoreDashboard(): void {
-  console.log('Restoring GitHub dashboard elements...');
+  logger.debug('Restoring GitHub dashboard elements...');
   DASHBOARD_SELECTORS.forEach((selector) => {
     showElements(selector);
   });
@@ -172,9 +86,8 @@ export function applyLayout(
   settings: Settings,
   _options: { isCustomMode?: boolean } = {}
 ): HTMLDivElement {
-  console.log('Applying custom layout...', settings);
+  logger.info('Applying custom layout...', settings);
 
-  ensureGlobalStyles();
 
   // 既存のダッシュボードをクリア
   clearDashboard();
@@ -289,7 +202,7 @@ function createSectionByType(type: string): HTMLElement | null {
     case 'projects':
       return createProjectsSection();
     default:
-      console.warn(`Unknown section type: ${type}`);
+      logger.warn(`Unknown section type: ${type}`);
       return null;
   }
 }
@@ -357,9 +270,9 @@ function insertToPage(container: HTMLElement): void {
   if (mainContent) {
     // メインコンテンツの最初の子として挿入
     mainContent.insertBefore(container, mainContent.firstChild);
-    console.log('Custom layout inserted into page');
+    logger.info('Custom layout inserted into page');
   } else {
-    console.error('Could not find main content area');
+    logger.error('Could not find main content area');
     // フォールバック: bodyに直接追加
     document.body.insertBefore(container, document.body.firstChild);
   }
@@ -374,7 +287,7 @@ export function rebuildLayout(
   settings: Settings,
   options: { isCustomMode?: boolean } = {}
 ): HTMLDivElement {
-  console.log('Rebuilding layout...');
+  logger.info('Rebuilding layout...');
 
   // 既存のカスタムレイアウトを削除
   removeElements('#github-dashboard-customizer-root');
@@ -459,13 +372,13 @@ export async function renderSectionData(
 ): Promise<void> {
   const section = document.getElementById(sectionId);
   if (!section) {
-    console.warn(`Section not found: ${sectionId}`);
+    logger.warn(`Section not found: ${sectionId}`);
     return;
   }
 
   const content = section.querySelector('.section-content');
   if (!content) {
-    console.warn(`Section content not found: ${sectionId}`);
+    logger.warn(`Section content not found: ${sectionId}`);
     return;
   }
 
@@ -493,10 +406,10 @@ export async function renderSectionData(
         break;
 
       default:
-        console.warn(`Unknown section: ${sectionId}`);
+        logger.warn(`Unknown section: ${sectionId}`);
     }
   } catch (error) {
-    console.error(`Error rendering section ${sectionId}:`, error);
+    logger.error(`Error rendering section ${sectionId}:`, error);
     renderSectionError(sectionId, String(error));
   }
 }
@@ -555,7 +468,7 @@ export function renderSectionError(sectionId: string, error: string): void {
       break;
 
     default:
-      console.warn(`Unknown section: ${sectionId}`);
+      logger.warn(`Unknown section: ${sectionId}`);
   }
 }
 

@@ -1,5 +1,6 @@
 import { CacheEntry } from '../types/settings';
-import { saveData, getData } from '../utils/storage';
+import { saveData, getData } from './storage';
+import { logger } from './logger';
 
 /**
  * キャッシュマネージャー
@@ -36,9 +37,9 @@ export class CacheManager {
 
     try {
       await saveData(cacheKey, entry);
-      console.log(`Cache saved: ${key} (TTL: ${ttl}s)`);
+      logger.debug(`Cache saved: ${key} (TTL: ${ttl}s)`);
     } catch (error) {
-      console.error(`Failed to save cache for key "${key}":`, error);
+      logger.error(`Failed to save cache for key "${key}":`, error);
     }
   }
 
@@ -54,7 +55,7 @@ export class CacheManager {
       const entry = await getData<CacheEntry<T>>(cacheKey);
 
       if (!entry) {
-        console.log(`Cache miss: ${key}`);
+        logger.debug(`Cache miss: ${key}`);
         return null;
       }
 
@@ -63,18 +64,18 @@ export class CacheManager {
       const age = now - entry.timestamp;
 
       if (age > entry.ttl) {
-        console.log(`Cache expired: ${key} (age: ${Math.floor(age / 1000)}s)`);
+        logger.debug(`Cache expired: ${key} (age: ${Math.floor(age / 1000)}s)`);
         // 期限切れのキャッシュを削除
         await this.delete(key);
         return null;
       }
 
-      console.log(
+      logger.debug(
         `Cache hit: ${key} (age: ${Math.floor(age / 1000)}s, TTL: ${Math.floor(entry.ttl / 1000)}s)`
       );
       return entry.data;
     } catch (error) {
-      console.error(`Failed to get cache for key "${key}":`, error);
+      logger.error(`Failed to get cache for key "${key}":`, error);
       return null;
     }
   }
@@ -89,9 +90,9 @@ export class CacheManager {
     try {
       const { removeData } = await import('../utils/storage');
       await removeData(cacheKey);
-      console.log(`Cache deleted: ${key}`);
+      logger.debug(`Cache deleted: ${key}`);
     } catch (error) {
-      console.error(`Failed to delete cache for key "${key}":`, error);
+      logger.error(`Failed to delete cache for key "${key}":`, error);
     }
   }
 
@@ -108,12 +109,12 @@ export class CacheManager {
 
       if (cacheKeys.length > 0) {
         await chrome.storage.local.remove(cacheKeys);
-        console.log(`Cleared ${cacheKeys.length} cache entries`);
+        logger.info(`Cleared ${cacheKeys.length} cache entries`);
       } else {
-        console.log('No cache entries to clear');
+        logger.info('No cache entries to clear');
       }
     } catch (error) {
-      console.error('Failed to clear all cache:', error);
+      logger.error('Failed to clear all cache:', error);
     }
   }
 
@@ -167,7 +168,7 @@ export class CacheManager {
         expired,
       };
     } catch (error) {
-      console.error(`Failed to get cache info for key "${key}":`, error);
+      logger.error(`Failed to get cache info for key "${key}":`, error);
       return { exists: false };
     }
   }

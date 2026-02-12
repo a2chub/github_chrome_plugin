@@ -1,4 +1,5 @@
 import { Message, SettingsUpdatedMessage } from '../types/messages';
+import { logger } from '../utils/logger';
 import { Settings } from '../types/settings';
 import { GroupedRepository, Issue, Project } from '../types/api';
 import {
@@ -9,33 +10,36 @@ import {
   restoreDashboard,
   setHeaderLoadingState,
 } from './layout-renderer';
-import { createNotificationBanner } from './dom-manipulator';
-import { getDashboardSnapshot } from '../utils/storage';
+import { createNotificationBanner } from '../utils/dom';
+import { getDashboardSnapshot, saveDashboardSnapshot } from '../utils/storage';
+import { CachedDashboardSnapshot } from '../types/settings';
 
 /**
  * Content Script
  * GitHubダッシュボードページに注入され、DOMを操作する
  */
 
-console.log('GitHub Dashboard Customizer: Content Script loaded');
+logger.info('GitHub Dashboard Customizer: Content Script loaded');
 
 let currentSettings: Settings | null = null;
 let isCustomLayoutActive = true;
 let isFetchingData = false;
+let pendingRefetch = false;
+let hasCachedDataRendered = false;
 
 /**
  * 初期化処理
  */
 async function init() {
-  console.log('Initializing content script...');
+  logger.info('Initializing content script...');
 
   // GitHubダッシュボードページかどうか確認
   if (!isGitHubDashboard()) {
-    console.log('Not a GitHub dashboard page');
+    logger.debug('Not a GitHub dashboard page');
     return;
   }
 
-  console.log('GitHub dashboard detected');
+  logger.info('GitHub dashboard detected');
 
   // 設定を取得
   await loadSettings();
@@ -48,11 +52,11 @@ async function init() {
   // ページが完全に読み込まれてからDOM操作を開始
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      console.log('DOM loaded');
+      logger.debug('DOM loaded');
       applyCustomizations();
     });
   } else {
-    console.log('DOM already loaded');
+    logger.debug('DOM already loaded');
     applyCustomizations();
   }
 }
@@ -80,12 +84,12 @@ async function loadSettings() {
 
     if (response.success) {
       currentSettings = response.data;
-      console.log('Settings loaded:', currentSettings);
+      logger.info('Settings loaded:', currentSettings);
     } else {
-      console.error('Failed to load settings:', response.error);
+      logger.error('Failed to load settings:', response.error);
     }
   } catch (error) {
-    console.error('Error loading settings:', error);
+    logger.error('Error loading settings:', error);
   }
 }
 
@@ -94,37 +98,38 @@ async function loadSettings() {
  */
 async function applyCustomizations() {
   if (!currentSettings) {
-    console.warn('No settings available');
+    logger.warn('No settings available');
     return;
   }
 
   if (!isCustomLayoutActive) {
-    console.log('Custom layout is disabled; skipping customization.');
+    logger.info('Custom layout is disabled; skipping customization.');
     // 標準レイアウトの場合でもトグルを表示
     addLayoutToggleToSearchForm(false);
     return;
   }
 
-  console.log('Applying customizations...');
+  logger.info('Applying customizations...');
 
   // レイアウトを適用
   try {
     applyLayout(currentSettings, { isCustomMode: isCustomLayoutActive });
     addLayoutToggleToSearchForm(true);
-    console.log('Layout applied successfully');
+    logger.info('Layout applied successfully');
     await renderCachedDashboardData();
 
     // PATが設定されているかチェック
     if (!currentSettings.token || currentSettings.token.trim() === '') {
+      setHeaderLoadingState(false);
       // PATが未設定の場合、通知バナーを表示
       showTokenRequiredBanner();
       return;
     }
 
-    // データを取得して表示
-    await fetchAndRenderData();
+    // データを取得して表示（fire-and-forget: キャッシュ表示後にバックグラウンドで最新データを取得）
+    fetchAndRenderData();
   } catch (error) {
-    console.error('Failed to apply layout:', error);
+    logger.error('Failed to apply layout:', error);
   }
 }
 
@@ -198,11 +203,13 @@ function handleLayoutModeChange(useCustomLayout: boolean) {
  * カスタムレイアウトを破棄してGitHub標準表示を復元
  */
 function teardownCustomLayout() {
-  console.log('Disabling custom layout and restoring original dashboard...');
+  logger.info('Disabling custom layout and restoring original dashboard...');
 
   setHeaderLoadingState(false);
 
   isFetchingData = false;
+  pendingRefetch = false;
+  hasCachedDataRendered = false;
 
   const root = document.getElementById('github-dashboard-customizer-root');
   if (root) {
@@ -215,7 +222,7 @@ function teardownCustomLayout() {
     .forEach((element) => element.remove());
 
   restoreDashboard();
-  
+
   // 標準レイアウトに切り替えた後、トグルボタンを追加
   setTimeout(() => {
     addLayoutToggleToSearchForm(false);
@@ -227,19 +234,22 @@ function teardownCustomLayout() {
  */
 async function fetchAndRenderData() {
   if (!isCustomLayoutActive) {
-    console.log('Custom layout disabled; skipping data fetch.');
+    logger.debug('Custom layout disabled; skipping data fetch.');
     return;
   }
 
   if (isFetchingData) {
-    console.log('Data fetch already in progress; skipping duplicate request.');
+    pendingRefetch = true;
+    logger.debug('Data fetch already in progress; queuing refetch.');
     return;
   }
+
+  let fetchFailed = false;
 
   try {
     isFetchingData = true;
     setHeaderLoadingState(true);
-    console.log('Fetching data...');
+    logger.info('Fetching data...');
 
     const response = await chrome.runtime.sendMessage({
       type: 'GET_DATA',
@@ -247,25 +257,43 @@ async function fetchAndRenderData() {
     } as Message);
 
     if (response.success) {
-      console.log('Data fetched:', response.data);
+      logger.debug('Data fetched:', response.data);
       if (!isCustomLayoutActive) {
-        console.log('Custom layout disabled during fetch; skipping render.');
+        logger.debug('Custom layout disabled during fetch; skipping render.');
         return;
       }
       await renderData(response.data);
+      saveDashboardSnapshotFromData(response.data);
     } else {
-      console.error('Failed to fetch data:', response.error);
-      // エラーを各セクションに表示
-      showDataError(response.error || 'データの取得に失敗しました');
+      fetchFailed = true;
+      logger.error('Failed to fetch data:', response.error);
+      if (hasCachedDataRendered) {
+        // staleデータが表示済みなので、データは消さずにヘッダーでエラーを通知
+        setHeaderLoadingState(true, 'データの更新に失敗しました');
+      } else {
+        showDataError(response.error || 'データの取得に失敗しました');
+      }
     }
   } catch (error) {
-    console.error('Error fetching data:', error);
-    showDataError(
-      error instanceof Error ? error.message : 'データの取得に失敗しました'
-    );
+    fetchFailed = true;
+    logger.error('Error fetching data:', error);
+    if (hasCachedDataRendered) {
+      setHeaderLoadingState(true, 'データの更新に失敗しました');
+    } else {
+      showDataError(
+        error instanceof Error ? error.message : 'データの取得に失敗しました'
+      );
+    }
   } finally {
-    setHeaderLoadingState(false);
     isFetchingData = false;
+    // エラー時にstaleデータを表示中の場合、エラーメッセージを維持する
+    if (!(fetchFailed && hasCachedDataRendered)) {
+      setHeaderLoadingState(false);
+    }
+    if (pendingRefetch) {
+      pendingRefetch = false;
+      fetchAndRenderData();
+    }
   }
 }
 
@@ -331,7 +359,7 @@ async function renderCachedDashboardData(): Promise<void> {
     return;
   }
 
-  console.log('Rendering cached dashboard data:', {
+  logger.debug('Rendering cached dashboard data:', {
     repositoriesUpdatedAt: snapshot.repositories?.updatedAt,
     issuesUpdatedAt: snapshot.issues?.updatedAt,
     projectsUpdatedAt: snapshot.projects?.updatedAt,
@@ -339,6 +367,29 @@ async function renderCachedDashboardData(): Promise<void> {
 
   setHeaderLoadingState(true, 'キャッシュされたデータを表示しています…');
   await renderData(cachedData);
+  hasCachedDataRendered = true;
+}
+
+/**
+ * API取得成功後にダッシュボードスナップショットを保存する（fire-and-forget）
+ */
+function saveDashboardSnapshotFromData(data: {
+  repositories?: GroupedRepository[];
+  issues?: Issue[];
+  projects?: Project[];
+}): void {
+  const now = Date.now();
+  const snapshot: CachedDashboardSnapshot = {};
+  if (data.repositories) {
+    snapshot.repositories = { data: data.repositories, updatedAt: now };
+  }
+  if (data.issues) {
+    snapshot.issues = { data: data.issues, updatedAt: now };
+  }
+  if (data.projects) {
+    snapshot.projects = { data: data.projects, updatedAt: now };
+  }
+  saveDashboardSnapshot(snapshot);
 }
 
 /**
@@ -361,7 +412,7 @@ chrome.runtime.onMessage.addListener(
     _sender: chrome.runtime.MessageSender,
     sendResponse: (response?: unknown) => void
   ) => {
-    console.log('Message received in content script:', message.type);
+    logger.debug('Message received in content script:', message.type);
 
     if (message.type === 'SETTINGS_UPDATED') {
       handleSettingsUpdated(message as SettingsUpdatedMessage);
@@ -376,11 +427,11 @@ chrome.runtime.onMessage.addListener(
  * 設定更新ハンドラー
  */
 async function handleSettingsUpdated(message: SettingsUpdatedMessage) {
-  console.log('Settings updated:', message.settings);
+  logger.info('Settings updated:', message.settings);
   currentSettings = message.settings;
 
   if (!isCustomLayoutActive) {
-    console.log('Custom layout disabled; deferring layout rebuild until re-enabled.');
+    logger.info('Custom layout disabled; deferring layout rebuild until re-enabled.');
     return;
   }
 
@@ -388,12 +439,12 @@ async function handleSettingsUpdated(message: SettingsUpdatedMessage) {
   try {
     rebuildLayout(currentSettings, { isCustomMode: isCustomLayoutActive });
     addLayoutToggleToSearchForm(true);
-    console.log('Layout rebuilt successfully');
+    logger.info('Layout rebuilt successfully');
 
     // データを再取得して表示
     await fetchAndRenderData();
   } catch (error) {
-    console.error('Failed to rebuild layout:', error);
+    logger.error('Failed to rebuild layout:', error);
   }
 }
 
@@ -408,19 +459,19 @@ function addLayoutToggleToSearchForm(isCustomMode: boolean) {
 
   // 検索フォームを探す
   const searchButton = document.querySelector('[data-target="qbsearch-input.inputButton"]') as HTMLElement;
-  const searchForm = searchButton?.closest('form') || 
-                    document.querySelector('form[data-test-selector="nav-search-form"]') ||
-                    document.querySelector('.AppHeader-search');
+  const searchForm = searchButton?.closest('form') ||
+    document.querySelector('form[data-test-selector="nav-search-form"]') ||
+    document.querySelector('.AppHeader-search');
 
   if (!searchButton && !searchForm) {
-    console.warn('Search form not found for layout toggle');
+    logger.warn('Search form not found for layout toggle');
     return;
   }
 
   // 検索フォームの親コンテナを取得
   const searchContainer = searchButton?.parentElement || searchForm?.parentElement;
   if (!searchContainer) {
-    console.warn('Search container not found');
+    logger.warn('Search container not found');
     return;
   }
 
@@ -483,7 +534,7 @@ function addLayoutToggleToSearchForm(isCustomMode: boolean) {
 
   const parent = insertionTarget?.parentElement;
   if (!insertionTarget || !parent) {
-    console.warn('Failed to determine insertion point for layout toggle');
+    logger.warn('Failed to determine insertion point for layout toggle');
     return;
   }
 

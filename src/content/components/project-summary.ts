@@ -4,7 +4,7 @@ import {
   createEmptyState,
   createErrorElement,
   formatRelativeTime,
-} from '../dom-manipulator';
+} from '../../utils/dom';
 
 /**
  * プロジェクトサマリーコンポーネント

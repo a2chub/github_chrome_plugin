@@ -1,4 +1,5 @@
 import { Message } from '../types/messages';
+import { logger } from '../utils/logger';
 import {
   Settings,
   DEFAULT_SETTINGS,
@@ -11,7 +12,7 @@ import { normalizeSettings } from '../utils/storage';
  * 設定画面のUI操作を担当
  */
 
-console.log('Options page loaded');
+logger.info('Options page loaded');
 
 let currentSettings: Settings | null = null;
 
@@ -19,7 +20,7 @@ let currentSettings: Settings | null = null;
  * 初期化処理
  */
 async function init() {
-  console.log('Initializing options page...');
+  logger.info('Initializing options page...');
 
   // 設定を読み込む
   await loadSettings();
@@ -42,13 +43,13 @@ async function loadSettings() {
 
     if (response.success) {
       currentSettings = normalizeSettings(response.data);
-      console.log('Settings loaded:', currentSettings);
+      logger.info('Settings loaded:', currentSettings);
     } else {
-      console.error('Failed to load settings:', response.error);
+      logger.error('Failed to load settings:', response.error);
       showStatus('token-status', 'error', '設定の読み込みに失敗しました');
     }
   } catch (error) {
-    console.error('Error loading settings:', error);
+    logger.error('Error loading settings:', error);
     showStatus('token-status', 'error', '設定の読み込みに失敗しました');
   }
 }
@@ -199,7 +200,7 @@ async function handleSaveToken() {
       );
     }
   } catch (error) {
-    console.error('Error saving token:', error);
+    logger.error('Error saving token:', error);
     showStatus('token-status', 'error', '保存に失敗しました');
   }
 }
@@ -225,7 +226,7 @@ async function handleValidateToken() {
       );
     }
   } catch (error) {
-    console.error('Error validating token:', error);
+    logger.error('Error validating token:', error);
     showStatus('token-status', 'error', '検証に失敗しました');
   }
 }
@@ -256,12 +257,12 @@ async function handleLayoutChange(event: Event) {
     } as Message);
 
     if (response.success) {
-      console.log('Layout settings saved');
+      logger.info('Layout settings saved');
     } else {
-      console.error('Failed to save layout settings:', response.error);
+      logger.error('Failed to save layout settings:', response.error);
     }
   } catch (error) {
-    console.error('Error saving layout settings:', error);
+    logger.error('Error saving layout settings:', error);
   }
 }
 
@@ -362,7 +363,7 @@ async function persistCurrentSettings(
       );
     }
   } catch (error) {
-    console.error('Error saving settings:', error);
+    logger.error('Error saving settings:', error);
     showStatus(statusElementId, 'error', '保存に失敗しました');
   }
 }
@@ -431,7 +432,7 @@ async function handleExport() {
 
     showStatus('export-status', 'success', '設定をエクスポートしました');
   } catch (error) {
-    console.error('Export error:', error);
+    logger.error('Export error:', error);
     showStatus('export-status', 'error', 'エクスポートに失敗しました');
   }
 }
@@ -504,7 +505,7 @@ async function handleFileSelect(event: Event) {
       );
     }
   } catch (error) {
-    console.error('Import error:', error);
+    logger.error('Import error:', error);
     if (error instanceof SyntaxError) {
       showStatus('export-status', 'error', 'JSONの形式が不正です');
     } else {

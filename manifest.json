@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "GitHub Dashboard Customizer",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Customize your GitHub dashboard layout to your preferences",
   "permissions": [
     "storage",
@@ -17,8 +17,16 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://github.com/", "https://github.com/?*"],
-      "js": ["content/content-script.js"],
+      "matches": [
+        "https://github.com/",
+        "https://github.com/?*"
+      ],
+      "css": [
+        "styles/main.css"
+      ],
+      "js": [
+        "content/content-script.js"
+      ],
       "run_at": "document_idle"
     }
   ],
@@ -38,4 +46,3 @@
     "default_popup": "popup/popup.html"
   }
 }
-

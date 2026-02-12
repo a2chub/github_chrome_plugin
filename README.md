@@ -26,6 +26,10 @@ github_chrome_plugin/
 │   │   ├── options.html
 │   │   ├── options.ts
 │   │   └── options.css
+│   ├── popup/              # Popup Page
+│   │   ├── popup.html
+│   │   ├── popup.ts
+│   │   └── popup.css
 │   ├── types/              # TypeScript型定義
 │   │   ├── settings.ts
 │   │   ├── api.ts
@@ -168,7 +172,7 @@ yarn test
 
 - **Manifest**: V3
 - **言語**: TypeScript
-- **ビルドツール**: 未定（webpack/vite/esbuild等を検討）
+- **ビルドツール**: esbuild
 - **パッケージマネージャー**: npm または yarn
 
 ## ライセンス

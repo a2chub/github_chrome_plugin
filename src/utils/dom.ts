@@ -2,6 +2,7 @@
  * DOM操作ユーティリティ
  * GitHubダッシュボードのDOMを操作する機能を提供
  */
+import { logger } from './logger';
 
 /**
  * セレクタで要素を検索して削除
@@ -12,7 +13,7 @@ export function removeElements(selector: string): void {
   elements.forEach((element) => {
     element.remove();
   });
-  console.log(`Removed ${elements.length} elements matching "${selector}"`);
+  logger.debug(`Removed ${elements.length} elements matching "${selector}"`);
 }
 
 /**
@@ -22,9 +23,9 @@ export function removeElements(selector: string): void {
 export function hideElements(selector: string): void {
   const elements = document.querySelectorAll(selector);
   elements.forEach((element) => {
-    (element as HTMLElement).style.display = 'none';
+    element.classList.add('gdc-hidden');
   });
-  console.log(`Hidden ${elements.length} elements matching "${selector}"`);
+  logger.debug(`Hidden ${elements.length} elements matching "${selector}"`);
 }
 
 /**
@@ -34,9 +35,9 @@ export function hideElements(selector: string): void {
 export function showElements(selector: string): void {
   const elements = document.querySelectorAll(selector);
   elements.forEach((element) => {
-    (element as HTMLElement).style.removeProperty('display');
+    element.classList.remove('gdc-hidden');
   });
-  console.log(`Shown ${elements.length} elements matching "${selector}"`);
+  logger.debug(`Shown ${elements.length} elements matching "${selector}"`);
 }
 
 /**
@@ -96,13 +97,6 @@ export function createContainer(id: string): HTMLDivElement {
   return createElement('div', {
     id,
     className: 'github-dashboard-customizer-container',
-    styles: {
-      position: 'relative',
-      width: '100%',
-      maxWidth: '1280px',
-      margin: '0 auto',
-      padding: '24px',
-    },
   });
 }
 
@@ -117,10 +111,10 @@ export function createSpinnerIcon(size = 18): HTMLSpanElement {
     attributes: {
       'aria-hidden': 'true',
     },
-    styles: {
+    styles: size !== 18 ? {
       width: `${size}px`,
       height: `${size}px`,
-    },
+    } : undefined,
   });
 }
 
@@ -137,33 +131,15 @@ export function createSection(
   const section = createElement('section', {
     id,
     className: 'dashboard-section',
-    styles: {
-      marginBottom: '24px',
-      padding: '16px',
-      backgroundColor: '#ffffff',
-      border: '1px solid #d0d7de',
-      borderRadius: '6px',
-    },
   });
 
   const header = createElement('h2', {
     textContent: title,
     className: 'section-header',
-    styles: {
-      fontSize: '20px',
-      fontWeight: '600',
-      marginBottom: '16px',
-      color: '#24292f',
-    },
   });
 
   const content = createElement('div', {
     className: 'section-content',
-    styles: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '12px',
-    },
   });
 
   section.appendChild(header);
@@ -179,23 +155,10 @@ export function createSection(
 export function createLoadingElement(): HTMLDivElement {
   const loading = createElement('div', {
     className: 'loading gdc-section-loading',
-    styles: {
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: '24px',
-      color: '#57606a',
-    },
   });
 
   const content = createElement('div', {
     className: 'gdc-loading-inline',
-    styles: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px',
-      fontSize: '14px',
-    },
   });
 
   const spinner = createSpinnerIcon(20);
@@ -218,12 +181,6 @@ export function createEmptyState(message: string): HTMLDivElement {
   return createElement('div', {
     className: 'empty-state',
     textContent: message,
-    styles: {
-      padding: '24px',
-      textAlign: 'center',
-      color: '#57606a',
-      fontSize: '14px',
-    },
   });
 }
 
@@ -236,14 +193,6 @@ export function createErrorElement(message: string): HTMLDivElement {
   return createElement('div', {
     className: 'error-message',
     textContent: message,
-    styles: {
-      padding: '12px 16px',
-      backgroundColor: '#ffdce0',
-      color: '#cf222e',
-      border: '1px solid #ffb3b8',
-      borderRadius: '6px',
-      fontSize: '14px',
-    },
   });
 }
 
@@ -319,81 +268,33 @@ export function createNotificationBanner(options: {
 }): HTMLDivElement {
   const banner = createElement('div', {
     className: `notification-banner notification-${options.type}`,
-    styles: {
-      position: 'relative',
-      padding: '16px 20px',
-      marginBottom: '20px',
-      borderRadius: '6px',
-      border: '1px solid',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px',
-    },
   });
 
   // タイプ別のスタイル設定
-  switch (options.type) {
-    case 'info':
-      banner.style.backgroundColor = '#ddf4ff';
-      banner.style.borderColor = '#54aeff';
-      banner.style.color = '#0969da';
-      break;
-    case 'warning':
-      banner.style.backgroundColor = '#fff8c5';
-      banner.style.borderColor = '#d4a72c';
-      banner.style.color = '#8a6116';
-      break;
-    case 'error':
-      banner.style.backgroundColor = '#ffdce0';
-      banner.style.borderColor = '#ffb3b8';
-      banner.style.color = '#cf222e';
-      break;
-    case 'success':
-      banner.style.backgroundColor = '#ddf4e4';
-      banner.style.borderColor = '#a8ddb5';
-      banner.style.color = '#116329';
-      break;
-  }
 
   // アイコン
   const icon = createElement('div', {
     className: 'banner-icon',
-    textContent: options.type === 'info' ? 'ℹ️' : 
-                 options.type === 'warning' ? '⚠️' : 
-                 options.type === 'error' ? '❌' : '✅',
-    styles: {
-      fontSize: '20px',
-      flexShrink: '0',
-    },
+    textContent: options.type === 'info' ? 'ℹ️' :
+      options.type === 'warning' ? '⚠️' :
+        options.type === 'error' ? '❌' : '✅',
   });
   banner.appendChild(icon);
 
   // コンテンツ
   const content = createElement('div', {
     className: 'banner-content',
-    styles: {
-      flex: '1',
-      minWidth: '0',
-    },
   });
 
   const title = createElement('div', {
     textContent: options.title,
     className: 'banner-title',
-    styles: {
-      fontSize: '14px',
-      fontWeight: '600',
-      marginBottom: '4px',
-    },
   });
   content.appendChild(title);
 
   const message = createElement('div', {
     textContent: options.message,
     className: 'banner-message',
-    styles: {
-      fontSize: '13px',
-    },
   });
   content.appendChild(message);
 
@@ -404,45 +305,11 @@ export function createNotificationBanner(options: {
     const button = createElement('button', {
       textContent: options.actionText,
       className: 'banner-action',
-      styles: {
-        padding: '6px 12px',
-        fontSize: '13px',
-        fontWeight: '500',
-        borderRadius: '6px',
-        border: '1px solid',
-        backgroundColor: '#ffffff',
-        cursor: 'pointer',
-        flexShrink: '0',
-      },
     });
 
     // タイプ別のボタンスタイル
-    switch (options.type) {
-      case 'info':
-        button.style.borderColor = '#0969da';
-        button.style.color = '#0969da';
-        break;
-      case 'warning':
-        button.style.borderColor = '#8a6116';
-        button.style.color = '#8a6116';
-        break;
-      case 'error':
-        button.style.borderColor = '#cf222e';
-        button.style.color = '#cf222e';
-        break;
-      case 'success':
-        button.style.borderColor = '#116329';
-        button.style.color = '#116329';
-        break;
-    }
 
     button.addEventListener('click', options.onAction);
-    button.addEventListener('mouseenter', () => {
-      button.style.backgroundColor = '#f6f8fa';
-    });
-    button.addEventListener('mouseleave', () => {
-      button.style.backgroundColor = '#ffffff';
-    });
 
     banner.appendChild(button);
   }
