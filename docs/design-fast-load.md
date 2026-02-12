@@ -469,3 +469,35 @@ async function handleGetData(message: Message) {
 - Service Worker 側で stale データを即時返却し、バックグラウンドで revalidate する拡張
 
 初期実装ではスナップショット機構のみで即時表示を実現する。レビューで `getStale()` が不要と判断された場合は削除してよい。
+
+---
+
+## 9. 実装結果（2026-02-13 更新）
+
+### レビュー指摘への対応
+
+設計レビュー（[design-review.md](./design-review.md)）の指摘を反映して実装を行った。
+
+| 指摘 | 対応 |
+|------|------|
+| C-1: `getStale()` 削除 | `getStale()` メソッドは追加せず、`cache-manager.ts` の変更を不要にした |
+| M-1: レースコンディション | `pendingRefetch` フラグを `content-script.ts` に追加 |
+| M-2: staleデータ保護 | `hasCachedDataRendered` フラグで、stale表示中のAPIエラーはヘッダーのみに表示 |
+| M-3: ローディングリーク | トークン未設定パスで `setHeaderLoadingState(false)` を呼び出し |
+| M-4: Promise.allSettled | `message-handlers.ts` で `Promise.allSettled` を採用し、部分的失敗を許容 |
+
+### 実際の変更対象ファイル（設計書のセクション6との差分）
+
+| ファイル | 設計時の想定 | 実際の変更 |
+|---------|-------------|-----------|
+| `src/utils/cache-manager.ts` | `getStale()` メソッド追加 | **変更なし**（C-1 対応で削除） |
+| `src/content/content-script.ts` | ロジック変更 | ✅ 設計通り + M-1, M-2, M-3 の修正を追加 |
+| `src/background/message-handlers.ts` | `Promise.all` 並列化 | ✅ `Promise.allSettled` に変更（M-4 対応） |
+
+### 追加で実施したリファクタリング
+
+- `src/content/components/repository-list.ts`: 2カラムグリッドレイアウトへの変更
+- `src/content/layout-renderer.ts`: importパス修正（`dom-manipulator` → `utils/dom`）
+- `src/content/components/issue-list.ts`: importパス修正
+- `src/content/components/project-summary.ts`: importパス修正
+- アイコンPNGファイルの生成（`scripts/generate-icons.js`）

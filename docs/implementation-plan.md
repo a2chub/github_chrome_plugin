@@ -83,10 +83,11 @@ Chrome拡張機能の基本構造を構築し、開発環境を整備する。
 - [x] 設定変更の即座反映機能
 
 #### 2.3 DOM操作基盤の実装
-- [x] `src/content/dom-manipulator.ts`の実装
+- [x] `src/utils/dom.ts`の実装（旧 `src/content/dom-manipulator.ts` から移動・リファクタリング）
   - 既存要素の削除機能
   - 既存要素の非表示機能
   - 新規要素の追加機能
+  - 汎用DOM操作ユーティリティ（createElement, createEmptyState, createErrorElement, formatRelativeTime）
 - [x] `src/content/layout-renderer.ts`の実装
   - レイアウトテンプレートの定義
   - レイアウトの適用機能
@@ -114,7 +115,7 @@ GitHub APIとの通信機能を実装し、認証管理を行う。
 ### タスク
 
 #### 3.1 APIクライアントの実装
-- [x] `src/background/api-client.ts`の実装
+- [x] `src/utils/api-client.ts`の実装（旧 `src/background/api-client.ts` から移動）
   - Fetch APIを使用したHTTPクライアント
   - 認証ヘッダーの追加
   - エラーハンドリング
@@ -126,7 +127,7 @@ GitHub APIとの通信機能を実装し、認証管理を行う。
 - [x] 認証エラー時の処理
 
 #### 3.3 キャッシュ管理の実装
-- [x] `src/background/cache-manager.ts`の実装
+- [x] `src/utils/cache-manager.ts`の実装（旧 `src/background/cache-manager.ts` から移動）
   - キャッシュの保存・取得
   - TTL（Time To Live）の管理
   - キャッシュの無効化
@@ -169,6 +170,7 @@ GitHub APIとの通信機能を実装し、認証管理を行う。
   - リポジトリリストの表示
   - リンクの生成
   - 更新日時の表示
+- [x] 2カラムグリッドレイアウトの実装（リポジトリカードのコンパクト表示）
 
 #### 4.2 メンションされたIssueリストの実装
 - [x] `GET /issues` API呼び出しの実装（メンションされたIssue取得）
@@ -199,6 +201,16 @@ GitHub APIとの通信機能を実装し、認証管理を行う。
 - [x] 定期的なデータ更新機能（ポーリング）
 - [x] 手動更新機能（リフレッシュボタン）
 - [x] 更新中のローディング表示
+
+#### 4.6 初期表示高速化（Stale-While-Revalidate）
+- [x] キャッシュデータによる即時描画の実装
+- [x] fire-and-forget方式によるバックグラウンドAPI取得
+- [x] API呼び出しの並列化（Promise.allSettled）
+- [x] レースコンディション防止（pendingRefetchフラグ）
+- [x] staleデータ保護（hasCachedDataRenderedフラグ）
+- [x] ローディングインジケータのリーク修正
+- [x] ダッシュボードスナップショットの保存・復元
+- [x] Service Workerからのメッセージハンドリング分離（`src/background/message-handlers.ts`）
 
 ### 完了基準
 - Organization別にリポジトリリストが表示される
@@ -356,8 +368,8 @@ Phase 6 (エラーハンドリングと最適化) ← 全Phaseの完了後に実
 
 ## 次のステップ
 
-1. Phase 1の実装開始
-2. 各Phase完了時に動作確認とテスト
-3. 問題があれば即座に対応
-4. 全Phase完了後に総合テストとデプロイ準備
+1. Phase 4完了 — コア機能とパフォーマンス改善が実装済み
+2. Phase 5, 6の検証 — Export/Import機能、エラーハンドリング最適化の動作確認
+3. テストカバレッジの向上 — ユニットテスト・E2Eテストの追加
+4. Chrome Web Storeへの公開準備
 

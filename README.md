@@ -9,6 +9,8 @@ GitHub.comのログイン後ダッシュボードページのレイアウトを�
 - **Organization別リポジトリリスト**: Organization単位で、最近使用したリポジトリを表示します
 - **メンションされたIssueリスト**: ユーザーがメンションされているIssueを一覧表示します
 - **更新順プロジェクトサマリー**: 更新順にプロジェクトのサマリーを表示します
+- **高速ロード**: Stale-while-revalidateパターンにより、キャッシュデータを即座に表示し、バックグラウンドで最新データを取得
+- **2カラムリポジトリリスト**: コンパクトな2カラムグリッドレイアウトでリポジトリを表示
 - **設定のExport/Import**: 設定をJSON形式でエクスポート/インポートでき、別マシンへの設定移植が容易です
 
 ## プロジェクト構成
@@ -17,11 +19,17 @@ GitHub.comのログイン後ダッシュボードページのレイアウトを�
 github_chrome_plugin/
 ├── src/                    # ソースコード
 │   ├── background/         # Background Script (Service Worker)
-│   │   └── service-worker.ts
+│   │   ├── service-worker.ts
+│   │   ├── github-api.ts
+│   │   ├── message-handlers.ts
+│   │   └── notification-manager.ts
 │   ├── content/            # Content Script
 │   │   ├── content-script.ts
-│   │   ├── dom-manipulator.ts
-│   │   └── layout-renderer.ts
+│   │   ├── layout-renderer.ts
+│   │   └── components/     # UIコンポーネント
+│   │       ├── repository-list.ts
+│   │       ├── issue-list.ts
+│   │       └── project-summary.ts
 │   ├── options/            # Options Page (設定画面)
 │   │   ├── options.html
 │   │   ├── options.ts
@@ -30,25 +38,36 @@ github_chrome_plugin/
 │   │   ├── popup.html
 │   │   ├── popup.ts
 │   │   └── popup.css
+│   ├── styles/             # スタイルシート
+│   │   └── main.css
 │   ├── types/              # TypeScript型定義
 │   │   ├── settings.ts
 │   │   ├── api.ts
 │   │   └── messages.ts
 │   └── utils/              # ユーティリティ関数
 │       ├── storage.ts
+│       ├── api-client.ts
+│       ├── cache-manager.ts
+│       ├── dom.ts
+│       ├── logger.ts
 │       └── validation.ts
 ├── assets/                 # 静的リソース
 │   └── icons/              # 拡張機能アイコン
 │       ├── icon16.png
 │       ├── icon48.png
 │       └── icon128.png
+├── scripts/                # ビルド・ユーティリティスクリプト
+│   └── generate-icons.js
 ├── dist/                   # ビルド成果物（.gitignore対象）
 ├── docs/                   # ドキュメント
-│   ├── requirements.md    # 要件定義書
-│   ├── design.md          # 設計書
+│   ├── requirements.md     # 要件定義書
+│   ├── design.md           # 設計書
+│   ├── design-fast-load.md # 高速ロード設計書
+│   ├── design-review.md    # 設計レビュー結果
 │   ├── implementation-plan.md  # 実装計画
-│   ├── verification.md    # 検証手順書
-│   └── issues/            # ローカルIssueファイル
+│   ├── initial-load-optimization.md # 初期ロード最適化仕様
+│   ├── verification.md     # 検証手順書
+│   └── issues/             # ローカルIssueファイル
 │       ├── phase-1-base.md
 │       ├── phase-2-settings-dom.md
 │       ├── phase-3-api-integration.md
@@ -152,6 +171,8 @@ yarn test
 
 - [要件定義書](docs/requirements.md)
 - [設計書](docs/design.md)
+- [高速ロード設計書](docs/design-fast-load.md)
+- [設計レビュー結果](docs/design-review.md)
 - [実装計画](docs/implementation-plan.md)
 - [検証手順書](docs/verification.md)
 

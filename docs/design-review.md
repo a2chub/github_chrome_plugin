@@ -191,3 +191,19 @@ const [repositories, issues, projects] = await Promise.all([
 | m-4 | Minor | ストレージ容量の見積もり追加 | 設計書のみ |
 
 **最低限 C-1 と M-1, M-2, M-3 の4点を設計に反映した上で、実装に進むことを推奨する。**
+
+---
+
+## 実装状況（2026-02-13 更新）
+
+| # | 重要度 | 指摘内容 | 状態 | 対応内容 |
+|---|--------|---------|------|---------|
+| C-1 | Critical | `getStale()` メソッドは YAGNI 違反 | ✅ 対応済み | `getStale()` は追加せず、スナップショット機構のみで実装 |
+| M-1 | Major | fire-and-forget化によるレースコンディション | ✅ 対応済み | `pendingRefetch` フラグを追加し、fetch完了後に再fetchする機構を実装 |
+| M-2 | Major | staleデータがAPIエラーで上書き消去される | ✅ 対応済み | `hasCachedDataRendered` フラグを追加し、staleデータ表示中はエラーをヘッダーのみに表示 |
+| M-3 | Major | ローディングインジケータがトークン未設定時に消えない | ✅ 対応済み | トークン未設定時に `setHeaderLoadingState(false)` を呼び出すよう修正 |
+| M-4 | Major | Promise.all の全滅挙動 | ✅ 対応済み | `Promise.allSettled` を採用し、部分的なデータ返却を可能にした |
+| m-1 | Minor | トークン変更時のスナップショット無効化 | ⚠️ 未対応 | 将来課題として保留 |
+| m-2 | Minor | スナップショット鮮度チェック | ⚠️ 未対応 | 将来課題として保留 |
+| m-3 | Minor | DOM再描画のチラつき | ⚠️ 未対応 | 将来課題として保留 |
+| m-4 | Minor | ストレージ容量の見積もり | ⚠️ 未対応 | 将来課題として保留 |
